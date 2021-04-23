@@ -8,6 +8,15 @@ library(tidyverse)
 library(lubridate)
 library(dbplyr)
 library(data.table)
+library(scales)
+library(plotly)
+library(gridExtra)
+library(tidytext)
+library(modelr)
+library(glmnet)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
 ```
 
 
@@ -169,5 +178,14 @@ accidents %>%
 ```
 
 
+```{r}
+small_accidents %>% 
+  separate(Start_Time, into = c("Date", "Time"), sep = " ") %>%
+  mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10)) %>%   mutate("Hour" = str_sub(Time,1,2)) 
+```
 
+
+>proportion of missing latituted and report to help explain why you are choosing to leave them out. 
+>In categorical variables we can create a category called missing. 
+>How to fill observations that have missing information
 
