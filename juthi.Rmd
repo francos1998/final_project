@@ -199,7 +199,7 @@ ca %>%
 nc_mod <- nc %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(Start_Time, End_Time, State)) %>%
+  select(-c(Start_Time, End_Time, State, Severity)) %>%
   # select(-arrival_date_year,
   #        -reservation_status,
   #        -reservation_status_date) %>% 
@@ -281,7 +281,7 @@ nc_final_lasso %>%
   pull_workflow_fit() %>% 
   tidy()
 
-ca_final_lasso %>% 
+nc_final_lasso %>% 
   pull_workflow_fit() %>% 
   vip()
 ```
