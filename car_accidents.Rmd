@@ -1,0 +1,153 @@
+---
+title: "car_accidents"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(dbplyr)
+library(data.table)
+```
+
+
+```{r}
+cars<-fread('../US_Accidents_Dec20.csv',data.table=FALSE)
+```
+```{r}
+write_csv(clean_cars, '../accidents_mn.csv')
+##If this is small enough or less than 100 mb I can push it to github to get rid of the ../part
+```
+
+```{r}
+cars %>% 
+  count(State)
+```
+```{r}
+cars %>%
+  summarise_all(~ mean(is.na(.))) %>% 
+  pivot_longer(1:46, names_to = "Variables to drop", values_to = "NA proportion") %>% 
+  filter(`NA proportion` >= 0.5)
+
+```
+
+```{r}
+cars_clean <- cars %>% 
+  select(-Source, -End_Lat, -End_Lng, -Number, -ID) 
+```
+
+```{r}
+cars_clean %>% 
+  mutate(Severity = as.factor(Severity)) %>% 
+  count(Severity) %>% 
+  ggplot(aes(x = n, y = Severity)) +
+  geom_col()
+```
+
+
+```{r}
+cars_clean %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value")
+```
+
+```{r}
+cars_clean %>% 
+  mutate(TMC = as.factor(TMC)) %>% 
+  count(TMC) %>% 
+  ggplot(aes(x = n, y = TMC)) +
+  geom_col()
+```
+>This variable is not very informative and it has many NA values
+
+
+```{r}
+cars_clean %>%
+  count(Start_Time) 
+
+```
+>We could group the time by hours. 
+
+
+```{r}
+cars_clean %>%
+  count(County) %>%
+  arrange(desc(n)) %>% 
+  top_n(10, n) %>% 
+  ggplot(aes(y = County, x = n)) +
+  geom_col()
+  
+```
+
+```{r}
+cars_clean %>%
+  count(State) %>%
+  arrange(desc(n)) %>% 
+  top_n(10, n) %>% 
+  ggplot(aes(y = State, x = n)) +
+  geom_col()
+  
+```
+
+
+```{r}
+cars_clean %>%
+  filter(State == "CA") %>% 
+  count(County) %>%
+  ggplot(aes(y = County, x = n)) +
+  geom_col()
+```
+
+
+```{r}
+cars_clean %>%
+  filter(State == "IL") %>% 
+  count(County) %>%
+  ggplot(aes(y = County, x = n)) +
+  geom_col()
+```
+
+```{r}
+cars_clean %>%
+  filter(State == "FL") %>% 
+  count(County) %>%
+  ggplot(aes(y = County, x = n)) +
+  geom_col()
+```
+
+```{r}
+cars_clean %>%
+  filter(State == "NC") %>% 
+  count(County) %>%
+  ggplot(aes(y = County, x = n)) +
+  geom_col()
+```
+
+
+```{r}
+cars_clean %>%
+  filter(State == "NY") %>% 
+  count(County) %>%
+  ggplot(aes(y = County, x = n)) +
+  geom_col()
+```
+
+>We could draw comparisons between counties with most observations, or simply stick with the 10 biggest state categories. 
+
+
+```{r}
+cars_clean %>%
+  ggplot(aes(`Temperature(F)`, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") 
+```
+
+>It is skewed to the left, it seems like heat could be associated with accidents, also it differs for the different types of Severyty. 
+
+```{r}
+cars_clean %>%
+  ggplot(aes(`Wind_Chill(F)`, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") 
+```
+
