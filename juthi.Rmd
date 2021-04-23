@@ -38,7 +38,7 @@ options(warn = -1)
 ```
 
 ```{r}
-cars <- read_csv("traffic.csv", col_types = cols(.default = col_character())) %>% 
+cars <- read_csv("small_accidents.csv", col_types = cols(.default = col_character())) %>% 
   type_convert()
   
 cars %>%
@@ -78,10 +78,13 @@ cars %>% summarise_all(~ mean(is.na(.))) %>%
   pivot_longer(1:49, names_to = "Variables to drop", values_to = "NA proportion") %>% 
   filter(`NA proportion` >= 0.5)
 
+#do some reporting for why you're choosing to leave them out 
+
 drop_na_cols <- c("End_Lat", "End_Lng", "Number")
 
 not_useful <- c("ID", "Source", "Timezone", "Airport_Code", "Weather_Timestamp","Wind_Direction", "Description", "Bump", "Traffic_Calming", "Give_Way", "No_Exit", "Railway", "Roundabout", "Station", "Stop", "Amenity", "Street", "Zipcode", "Country", "Turning_Loop")
 
+#eliminated due to near-zero variance, step function can also get rid of them. 
 
 traffic <- 
   cars %>% 
@@ -265,6 +268,22 @@ nc_lasso_tune <-
 
  nc_lasso_tune %>%
    collect_metrics()
+ 
+best_param_nc <- nc_lasso_tune %>% 
+  select_best(metric = "accuracy")
+best_param_nc
+
+nc_final_lasso <- nc_lasso_wf %>% 
+  finalize_workflow(best_param_nc) %>% 
+  fit(data = nc_training)
+
+nc_final_lasso %>% 
+  pull_workflow_fit() %>% 
+  tidy()
+
+ca_final_lasso %>% 
+  pull_workflow_fit() %>% 
+  vip()
 ```
 
 ```{r}
