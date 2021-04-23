@@ -17,12 +17,20 @@ accidents<-fread('small_accidents.csv',data.table=FALSE)
 
 
 
+
+
+
 ```{r}
 accidents %>% 
   count(State) %>% 
   arrange(desc(n)) %>% 
   head(12)
 ```
+
+
+
+
+
 
 ```{r}
 accidents %>%
@@ -67,8 +75,9 @@ accidents_clean %>%
              scales = "free")
 ```
 
-
 >This variable is not very informative and it has many NA values
+
+
 
 
 ```{r}
@@ -158,4 +167,7 @@ accidents %>%
   ggplot(aes(`Wind_Chill(F)`, ..prop.., group = Severity)) +
   geom_bar(aes(fill = Severity), position = "dodge") 
 ```
+
+
+
 
