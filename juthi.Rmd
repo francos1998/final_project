@@ -192,6 +192,8 @@ ca %>%
   count(n_miss_all)
 ```
 
+
+
 ### Modelling 
 
 ```{r}
