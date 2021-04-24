@@ -111,15 +111,38 @@ traffic <- traffic %>%
 
 ```{r}
 #code not working. looking to seperare end and start time into year, month, day, hour
-time <- traffic %>%
+traffic_time <- traffic %>%
   mutate(Duration = (End_Time - Start_Time)) %>%
   # accident duration should be positive
   filter(!(Duration < 0)) %>%
   separate(Start_Time, into = c("Date", "Time"), sep = " ") %>%
-  mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10), 
-         "Wday" = as.character(wday(Date)), "Hour" = str_sub(Time, 1, 2)) %>%
+  mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10),
+         "Wday" = as.character(wday(Date))) %>%
+  mutate("Hour" = str_sub(Time,1,2)) %>%
+  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
+                           levels = c("Not Severe", "Severe"))) %>% 
   select(-c("Date", "Time", "End_Time")) %>%
   select(TMC, Severity, Year, Month, Day, Hour, Wday, Duration, everything())
+
+```
+
+
+
+```{r}
+#Drop levels that have less than 20 observations
+weather_to_drop <- 
+  traffic_time %>% 
+    count(Weather_Condition) %>% 
+    filter(n < 20) %>% 
+    select(Weather_Condition)
+
+weather_to_drop <- 
+  weather_to_drop$Weather_Condition %>% 
+    unlist()
+
+traffic_weather <- traffic_time %>% 
+  filter(!(Weather_Condition %in% weather_to_drop)) %>% 
+  mutate(Weather_Condition = factor(Weather_Condition)) 
 
 ```
 
