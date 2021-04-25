@@ -144,6 +144,8 @@ traffic_weather <- traffic_time %>%
   filter(!(Weather_Condition %in% weather_to_drop)) %>% 
   mutate(Weather_Condition = factor(Weather_Condition)) 
 
+traffic_final <- traffic_weather
+
 ```
 
 
