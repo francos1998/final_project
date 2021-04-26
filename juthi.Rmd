@@ -135,7 +135,6 @@ traffic <- traffic %>%
 
 
 ```{r}
-#code not working. looking to seperare end and start time into year, month, day, hour
 traffic_time <- traffic %>%
   mutate(Duration = (End_Time - Start_Time)) %>%
   # accident duration should be positive
@@ -940,11 +939,18 @@ tree_fit %>%
   collect_metrics()
 ```
 
+<<<<<<< HEAD
 ```{r}
 lending_stack <- 
   stacks() %>% 
   add_candidates(lasso_tune) %>%
   add_candidates(rf_tune) %>%
+=======
+lending_stack <- 
+  stacks() %>% 
+  add_candidates(lasso_tune)%>%
+  #add_candidates(rf_tune) %>%
+>>>>>>> d9dedd79cf3c4bb1375d6e3139d32d7ca97d70c5
   add_candidates(tree_fit)
 ```
 

@@ -1,0 +1,241 @@
+---
+title: "juthi_clean"
+author: "Juthi Dewan"
+date: "4/26/2021"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(dplyr)
+library(tidyverse)
+library(sf)
+library(tidyverse)         # for reading in data, graphing, and cleaning
+library(tidymodels)        # for modeling ... tidily
+library(glmnet)            # for regularized regression, including LASSO
+library(naniar)            # for examining missing values (NAs)
+library(lubridate)         # for date manipulation
+library(moderndive)        # for King County housing data
+library(vip)               # for variable importance plots
+library(rmarkdown)         # for paged tables
+theme_set(theme_minimal()) # my favorite ggplot2 theme :)
+
+
+
+library(tidyverse)         # for graphing and data cleaning
+library(tidymodels)        # for modeling
+library(themis)            # for step functions for unbalanced data
+library(stacks)            # for stacking models
+library(naniar)            # for examining missing values (NAs)
+library(lubridate)         # for date manipulation
+library(moderndive)        # for King County housing data
+library(vip)               # for variable importance plots
+library(DALEX)             # for model interpretation  
+library(DALEXtra)          # for extension of DALEX
+library(patchwork)         # for combining plots nicely
+theme_set(theme_minimal()) # Lisa's favorite theme
+
+
+library(tidyverse)
+library(scales)
+library(lubridate)
+library(plotly)
+library(gridExtra)
+library(tidytext)
+library(modelr)
+library(caret)
+library(ROSE)
+library(glmnet)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+options(warn = -1)
+```
+
+
+
+
+```{r}
+cars <- read_csv("small_accidents.csv", col_types = cols(.default = col_character())) %>% 
+  type_convert()
+
+weather <-
+  cars %>%
+  group_by(Weather_Condition) %>%
+  summarize(Count=n()) %>%
+  arrange(desc(Count))
+```
+
+
+#Pre-processing
+
+```{r}
+cars %>% summarise_all(~ mean(is.na(.))) %>% 
+  pivot_longer(1:49, names_to = "Variables to drop", values_to = "NA proportion") %>% 
+  filter(`NA proportion` >= 0.5)
+
+#do some reporting for why you're choosing to leave them out 
+
+drop_na_cols <- c("End_Lat", "End_Lng", "Number")
+
+not_useful <- c("ID", "Source", "Timezone", "Airport_Code", "Weather_Timestamp","Wind_Direction", "Description", "Bump", "Traffic_Calming", "Give_Way", "No_Exit", "Railway", "Roundabout", "Station", "Stop", "Amenity", "Street", "Zipcode", "Country", "Turning_Loop")
+
+#eliminated due to near-zero variance, step function can also get rid of them. 
+
+traffic <- 
+  cars %>% 
+  select(-all_of(drop_na_cols), -all_of(not_useful))
+
+
+traffic <-  traffic %>%
+  rename("Distance" = `Distance(mi)`, "Temperature" = `Temperature(F)`, "Humidity" = `Humidity(%)`, 
+         "Pressure" = `Pressure(in)`, "Visibility" = `Visibility(mi)`, "Wind_Speed" = `Wind_Speed(mph)`)
+
+traffic$Severity <- as.character(traffic$Severity)
+
+traffic <-
+  traffic %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all)
+
+traffic <- traffic %>%
+  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
+                           levels = c("Not Severe", "Severe")))
+```
+
+
+```{r}
+traffic_time <- traffic %>%
+  mutate(Duration = (End_Time - Start_Time)) %>%
+  # accident duration should be positive
+  filter(!(Duration < 0)) %>%
+  separate(Start_Time, into = c("Date", "Time"), sep = " ") %>%
+  mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10),
+         "Wday" = as.character(wday(Date))) %>%
+  mutate("Hour" = str_sub(Time,1,2)) %>%
+  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
+                           levels = c("Not Severe", "Severe"))) %>% 
+  select(-c("Date", "Time", "End_Time")) %>%
+  select(TMC, Severity, Year, Month, Day, Hour, Wday, Duration, everything())
+
+```
+
+
+```{r}
+#Drop levels that have less than 20 observations
+weather_to_drop <- 
+  traffic_time %>% 
+    count(Weather_Condition) %>% 
+    filter(n < 20) %>% 
+    select(Weather_Condition)
+
+weather_to_drop <- 
+  weather_to_drop$Weather_Condition %>% 
+    unlist()
+
+traffic_weather <- traffic_time %>% 
+  filter(!(Weather_Condition %in% weather_to_drop)) %>% 
+  mutate(Weather_Condition = factor(Weather_Condition)) 
+
+traffic_final <- traffic_weather
+
+traffic_final %>%
+  group_by(Weather_Condition) %>%
+  summarize(Count=n()) %>%
+  arrange(desc(Count))
+```
+
+```{r}
+#modeling pre-process for traffic_final
+
+traffic_mod <- traffic_final %>% 
+  mutate(Status = as.factor(Status)) %>% 
+  mutate(across(where(is.character), as.factor)) %>% 
+  select(-c(State, Severity, Year, Day)) %>%
+  # select(-arrival_date_year,
+  #        -reservation_status,
+  #        -reservation_status_date) %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all)
+
+
+traffic_mod$Crossing <- as.factor(traffic_mod$Crossing)
+traffic_mod$Month <- as.numeric(traffic_mod$Month)
+traffic_mod$Wday <- as.numeric(traffic_mod$Wday)
+traffic_mod$Hour <- as.numeric(traffic_mod$Hour)
+traffic_mod$Duration <- as.numeric(traffic_mod$Duration)
+traffic_mod$Junction <- as.factor(traffic_mod$Junction)
+traffic_mod$Traffic_Signal <- as.factor(traffic_mod$Traffic_Signal)
+ 
+
+set.seed(327) #for reproducibility
+
+# Randomly assigns 75% of the data to training.
+traffic_split <- initial_split(traffic_mod, 
+                             prop = .50)
+traffic_split
+
+traffic_training <- training(traffic_split)
+traffic_testing <- testing(traffic_split)
+```
+
+
+```{r}
+#lasso 
+
+lasso_recipe <- 
+  recipe(Status ~ .,
+         data = traffic_training) %>% 
+  step_mutate(County,
+               County = fct_lump_n(County, n = 5)) %>%
+   step_mutate(City,
+               City = fct_lump_n(City, n = 5)) %>%
+  step_dummy(all_nominal(),
+             -all_outcomes()) %>% 
+  step_normalize(all_predictors(),
+                 -all_nominal(),
+                 -all_outcomes())
+
+lasso_recipe %>% 
+  prep() %>% 
+  juice()
+
+lasso_mod <- 
+  logistic_reg(mixture = 1) %>% 
+  set_engine("glmnet") %>% 
+  set_args(penalty = tune()) %>% 
+  set_mode("classification")
+
+lasso_wf <-
+  workflow() %>% 
+  add_recipe(lasso_recipe) %>% 
+  add_model(lasso_mod)
+
+set.seed(494) #for reproducible 5-fold
+traffic_cv <- vfold_cv(traffic_training,
+                       v = 5)
+
+penalty_grid <- grid_regular(penalty(),
+                             levels = 10)
+
+# add ctrl_grid - assures predictions and workflows are saved
+ctrl_grid <- control_stack_grid()
+
+# tune the model
+lasso_tune <- 
+  lasso_wf %>% 
+  tune_grid(
+    resamples = traffic_cv,
+    grid = penalty_grid,
+    control = ctrl_grid
+    )
+
+lasso_tune %>%
+  collect_metrics()
+```
+
+
+
+
