@@ -645,21 +645,13 @@ fl_final_lasso %>%
 
 
 ```{r}
-set.seed(494) #for reproducible 5-fold
-traffic_cv <- vfold_cv(top5_training,
-                       v = 5)
 
-penalty_grid <- grid_regular(penalty(),
-                             levels = 10)
-
-# add ctrl_grid - assures predictions and workflows are saved
-ctrl_grid <- control_stack_grid()
 ```
 
 ```{r}
-#lasso modeling 
+#modeling pre-process for traffic_final
 
-top5_mod <- traffic_final %>% 
+traffic_mod <- traffic_final %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
   select(-c(State, Severity, Year, Day)) %>%
@@ -671,28 +663,31 @@ top5_mod <- traffic_final %>%
   select(-n_miss_all)
 
 
- top5_mod$Crossing <- as.factor(top5_mod$Crossing)
-top5_mod$Month <- as.numeric(top5_mod$Month)
- top5_mod$Wday <- as.numeric(top5_mod$Wday)
- top5_mod$Hour <- as.numeric(top5_mod$Hour)
-  top5_mod$Duration <- as.numeric(top5_mod$Duration)
- top5_mod$Junction <- as.factor(top5_mod$Junction)
- top5_mod$Traffic_Signal <- as.factor(top5_mod$Traffic_Signal)
+traffic_mod$Crossing <- as.factor(traffic_mod$Crossing)
+traffic_mod$Month <- as.numeric(traffic_mod$Month)
+traffic_mod$Wday <- as.numeric(traffic_mod$Wday)
+traffic_mod$Hour <- as.numeric(traffic_mod$Hour)
+traffic_mod$Duration <- as.numeric(traffic_mod$Duration)
+traffic_mod$Junction <- as.factor(traffic_mod$Junction)
+traffic_mod$Traffic_Signal <- as.factor(traffic_mod$Traffic_Signal)
  
 
 set.seed(327) #for reproducibility
 
 # Randomly assigns 75% of the data to training.
-top5_split <- initial_split(top5_mod, 
+traffic_split <- initial_split(traffic_mod, 
                              prop = .50)
-top5_split
+traffic_split
 
-top5_training <- training(top5_split)
-top5_testing <- testing(top5_split)
+traffic_training <- training(traffic_split)
+traffic_testing <- testing(traffic_split)
+```
 
-#creating recipe
-top5_recipe <- recipe(Status ~ .,
-                       data = top5_training) %>% 
+
+```{r}
+#classo
+traffic_recipe <- recipe(Status ~ .,
+                       data = traffic_training) %>% 
   step_mutate(County, 
               County = fct_lump_n(County, n = 5)) %>% 
   step_mutate(City, 
@@ -703,60 +698,69 @@ top5_recipe <- recipe(Status ~ .,
   step_dummy(all_nominal(),
              -all_outcomes()) 
 
-top5_recipe %>% 
+traffic_recipe %>% 
   prep() %>% #applied to training data by default since that's in the recipe
   juice() 
 
 
 #setting up lasso for north carolina
-top5_lasso_mod <- 
+traffic_lasso_mod <- 
   logistic_reg(mixture = 1) %>% 
   set_engine("glmnet") %>% 
   set_args(penalty = tune()) %>% 
   set_mode("classification")
 
 
-top5_lasso_wf <- 
+traffic_lasso_wf <- 
   workflow() %>% 
-  add_recipe(top5_recipe) %>% 
-  add_model(top5_lasso_mod)
+  add_recipe(traffic_recipe) %>% 
+  add_model(traffic_lasso_mod)
 
-top5_lasso_wf
+traffic_lasso_wf
 
-top5_cv <- vfold_cv(top5_training, v = 3)
+
+
+set.seed(494) #for reproducible 5-fold
+traffic_cv <- vfold_cv(traffic_training,
+                       v = 5)
+
 penalty_grid <- grid_regular(penalty(),
                              levels = 10)
 
-top5_lasso_tune <- 
-  top5_lasso_wf %>% 
+# add ctrl_grid - assures predictions and workflows are saved
+ctrl_grid <- control_stack_grid()
+
+
+traffic_lasso_tune <- 
+  traffic_lasso_wf %>% 
   tune_grid(
-    resamples = tx_cv,
+    resamples = traffic_cv,
     grid = penalty_grid
     )
 
-top5_lasso_tune
+traffic_lasso_tune
 
-top5_lasso_tune %>%
+traffic_lasso_tune %>%
     collect_metrics()
 
-best_param_top5 <- top5_lasso_tune %>% 
+best_param_traffic <- traffic_lasso_tune %>% 
   select_best(metric = "accuracy")
-best_param_top5
+best_param_traffic
 
-top5_final_lasso <- top5_lasso_wf %>% 
-  finalize_workflow(best_param_top5) %>% 
-  fit(data = top5_training)
+traffic_final_lasso <- traffic_lasso_wf %>% 
+  finalize_workflow(best_param_traffic) %>% 
+  fit(data = traffic_training)
 
-top5_final_lasso %>% 
+traffic_final_lasso %>% 
   pull_workflow_fit() %>% 
   tidy()
 
-top5_final_lasso %>% 
+traffic_final_lasso %>% 
   pull_workflow_fit() %>% 
   vip()
 
 
-top5_mod %>% 
+traffic_mod %>% 
   count(Status)
 ```
 
@@ -827,7 +831,7 @@ top5_mod %>%
 
 rf_recipe <- 
   recipe(Status ~ .,
-         data = top5_training) %>% 
+         data = traffic_training) %>% 
   step_mutate_at(all_numeric(), 
                  fn = ~as.numeric(.))
 
@@ -852,13 +856,13 @@ rf_workflow <-
 
 rf_penalty_grid <- 
   grid_regular(finalize(mtry(),
-                        top5_training %>%
+                        traffic_training %>%
                           select(-Status)),
                min_n(),
                levels = 3)
 
 
-traffic_cv <- vfold_cv(top5_training,
+traffic_cv <- vfold_cv(traffic_training,
                        v = 5)
 
 rf_tune <- 
@@ -869,6 +873,8 @@ rf_tune <-
     control = control_stack_grid()
   )
 
+rf_tune %>%
+  collect_metrics()
 ```
 
 
