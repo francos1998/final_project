@@ -764,67 +764,6 @@ traffic_mod %>%
   count(Status)
 ```
 
-```{r}
-#random forest modeling 
-# ranger_recipe <- 
-#   recipe(formula = Status ~ ., 
-#          data = top5_training)
-# 
-# ranger_recipe %>%
-#   prep() %>%
-#   juice()
-# 
-# ranger_spec <- 
-#   rand_forest(mtry = 6, 
-#               min_n = 10, 
-#               trees = 100) %>% 
-#   set_mode("classification") %>% 
-#   set_engine("ranger")
-# 
-# ranger_workflow <- 
-#   workflow() %>% 
-#   add_recipe(ranger_recipe) %>% 
-#   add_model(ranger_spec) 
-# 
-# ranger_fit <- ranger_workflow %>% 
-#   fit(top5_training)
-# 
-# set.seed(1211) # for reproducibility
-# traffic_cv <- vfold_cv(top5_training, v = 5)
-# 
-# metric <- metric_set(accuracy)
-# ctrl_res <- control_stack_resamples()
-# 
-# ranger_cv <- ranger_workflow %>% 
-#   fit_resamples(traffic_cv, 
-#                 metrics = metric,
-#                 control = ctrl_res)
-# 
-# # Evaluation metrics averaged over all folds:
-# collect_metrics(ranger_cv)
-# 
-# 
-# ranger_grid <-
-#   grid_regular(finalize(mtry(),
-#                         top5_training %>%
-#                           select(-Status)),
-#                min_n(),
-#                levels = 3)
-# 
-# ranger_tune <-
-#   ranger_workflow %>%
-#   tune_grid(
-#     resamples = top5_cv,
-#     grid = ranger_grid,
-#     control = ctrl_grid
-#   )
-# 
-# 
-# ranger_tune %>%
-#   collect_metrics()
-```
-
-
 
 ```{r}
 #classification rf 
