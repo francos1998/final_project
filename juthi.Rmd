@@ -683,42 +683,35 @@ traffic_training <- training(traffic_split)
 traffic_testing <- testing(traffic_split)
 ```
 
-
 ```{r}
-#classo
-traffic_recipe <- recipe(Status ~ .,
-                       data = traffic_training) %>% 
-  step_mutate(County, 
-              County = fct_lump_n(County, n = 5)) %>% 
-  step_mutate(City, 
-              City = fct_lump_n(City, n = 5)) %>% 
+#lasso
+lasso_recipe <-
+  recipe(Status ~ .,
+         data = traffic_training) %>%
+  step_mutate(County,
+               County = fct_lump_n(County, n = 5)) %>%
+   step_mutate(City,
+               City = fct_lump_n(City, n = 5)) %>%
   step_normalize(all_predictors(),
-                -all_nominal(),
-                -all_outcomes()) %>% 
+                 -all_nominal(),
+                 -all_outcomes()) %>%
   step_dummy(all_nominal(),
-             -all_outcomes()) 
+             -all_outcomes())
 
-traffic_recipe %>% 
-  prep() %>% #applied to training data by default since that's in the recipe
-  juice() 
+lasso_recipe %>%
+  prep() %>%
+  juice()
 
-
-#setting up lasso for north carolina
-traffic_lasso_mod <- 
-  logistic_reg(mixture = 1) %>% 
-  set_engine("glmnet") %>% 
-  set_args(penalty = tune()) %>% 
+lasso_mod <-
+  logistic_reg(mixture = 1) %>%
+  set_engine("glmnet") %>%
+  set_args(penalty = tune()) %>%
   set_mode("classification")
 
-
-traffic_lasso_wf <- 
-  workflow() %>% 
-  add_recipe(traffic_recipe) %>% 
-  add_model(traffic_lasso_mod)
-
-traffic_lasso_wf
-
-
+lasso_wf <-
+  workflow() %>%
+  add_recipe(lasso_recipe) %>%
+  add_model(lasso_mod)
 
 set.seed(494) #for reproducible 5-fold
 traffic_cv <- vfold_cv(traffic_training,
@@ -730,38 +723,101 @@ penalty_grid <- grid_regular(penalty(),
 # add ctrl_grid - assures predictions and workflows are saved
 ctrl_grid <- control_stack_grid()
 
+metric <- metric_set(accuracy)
 
-traffic_lasso_tune <- 
-  traffic_lasso_wf %>% 
+# tune the model
+lasso_tune <-
+  lasso_wf %>%
   tune_grid(
     resamples = traffic_cv,
-    grid = penalty_grid
+    grid = penalty_grid,
+    control = ctrl_grid
     )
 
-traffic_lasso_tune
-
-traffic_lasso_tune %>%
-    collect_metrics()
-
-best_param_traffic <- traffic_lasso_tune %>% 
-  select_best(metric = "accuracy")
-best_param_traffic
-
-traffic_final_lasso <- traffic_lasso_wf %>% 
-  finalize_workflow(best_param_traffic) %>% 
-  fit(data = traffic_training)
-
-traffic_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  tidy()
-
-traffic_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  vip()
+lasso_tune %>%
+  collect_metrics()
+```
 
 
-traffic_mod %>% 
-  count(Status)
+
+```{r}
+# #lasso
+# traffic_recipe <- recipe(Status ~ .,
+#                        data = traffic_training) %>%
+#   step_mutate(County,
+#               County = fct_lump_n(County, n = 5)) %>%
+#   step_mutate(City,
+#               City = fct_lump_n(City, n = 5)) %>%
+#   step_normalize(all_predictors(),
+#                 -all_nominal(),
+#                 -all_outcomes()) %>%
+#   step_dummy(all_nominal(),
+#              -all_outcomes())
+# 
+# traffic_recipe %>%
+#   prep() %>% #applied to training data by default since that's in the recipe
+#   juice()
+# 
+# 
+# #setting up lasso for north carolina
+# traffic_lasso_mod <-
+#   logistic_reg(mixture = 1) %>%
+#   set_engine("glmnet") %>%
+#   set_args(penalty = tune()) %>%
+#   set_mode("classification")
+# 
+# 
+# traffic_lasso_wf <-
+#   workflow() %>%
+#   add_recipe(traffic_recipe) %>%
+#   add_model(traffic_lasso_mod)
+# 
+# traffic_lasso_wf
+# 
+# 
+# set.seed(494) #for reproducible 5-fold
+# traffic_cv <- vfold_cv(traffic_training,
+#                        v = 5)
+# 
+#  penalty_grid <- grid_regular(penalty(),
+#                               levels = 10)
+# 
+# # add ctrl_grid - assures predictions and workflows are saved
+# ctrl_grid <- control_stack_grid()
+# 
+# 
+# traffic_lasso_tune <-
+#   traffic_lasso_wf %>%
+#   tune_grid(
+#     resamples = traffic_cv,
+#     grid = penalty_grid, 
+#     control = ctrl_grid
+#     )
+# 
+# traffic_lasso_tune
+# 
+# traffic_lasso_tune %>%
+#     collect_metrics()
+
+# best_param_traffic <- traffic_lasso_tune %>%
+#   select_best(metric = "accuracy")
+# best_param_traffic
+# 
+# traffic_final_lasso <- traffic_lasso_wf %>%
+#   finalize_workflow(best_param_traffic) %>%
+#   fit(data = traffic_training)
+# 
+# traffic_final_lasso %>%
+#   pull_workflow_fit() %>%
+#   tidy()
+# 
+# traffic_final_lasso %>%
+#   pull_workflow_fit() %>%
+#   vip()
+# 
+# 
+# traffic_mod %>%
+#   count(Status)
 ```
 
 
@@ -780,12 +836,13 @@ rf_recipe %>%
   juice()
 
 
-rf_model <- 
-  rand_forest(mtry = tune(), 
-              min_n = tune(), 
-              trees = 10) %>% 
-  set_mode("classification") %>% 
+rf_model <-
+  rand_forest(mtry = tune(),
+              min_n = tune(),
+              trees = 10) %>%
+  set_mode("classification") %>%
   set_engine("ranger")
+
 
 rf_workflow <-
   workflow() %>% 
@@ -840,6 +897,59 @@ knn_tune <-
     grid = 4,
     control = control_stack_resamples()
   )
+```
+
+
+```{r}
+#decision trees
+tree_model <- 
+  decision_tree() %>% 
+  set_mode("classification") %>% 
+  set_engine("rpart")
+
+tree_workflow <-
+  workflow() %>% 
+  add_recipe(rf_recipe) %>% 
+  add_model(tree_model)
+
+tree_fit <- tree_workflow %>% 
+  fit_resamples(traffic_cv, 
+                # metrics = metric,
+                control = control_stack_resamples())
+
+collect_metrics(tree_fit)
+```
+
+# model stacking 
+```{r}
+lasso_tune %>%
+  collect_metrics()
+
+rf_tune %>%
+  collect_metrics()
+
+tree_fit %>%
+  collect_metrics()
+
+
+lending_stack <- 
+  stacks() %>% 
+  add_candidates(lasso_tune) %>%
+  add_candidates(rf_tune) 
+  add_candidates(tree_fit)
+```
+
+```{r}
+lending_blend <-
+  lending_stack %>% 
+  blend_predictions()
+lending_blend
+```
+
+```{r}
+autoplot(lending_blend)
+```
+
 ```
 
 
