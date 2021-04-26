@@ -171,23 +171,23 @@ ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) +
 
 ```{r}
 ca <- 
-  traffic %>%
+  traffic_final %>%
   filter(State=="CA")
 
 tx <-
-  traffic %>%
+  traffic_final %>%
   filter(State=="TX")
 
 fl <-
-  traffic %>%
+  traffic_final %>%
   filter(State=="FL")
 
 sc <-
-  traffic %>%
+  traffic_final %>%
   filter(State=="SC")
 
 nc <-
-  traffic %>%
+  traffic_final %>%
   filter(State=="NC")
 ```
 
@@ -226,8 +226,7 @@ ca %>%
 nc_mod <- nc %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(Start_Time, End_Time, State, Severity)) %>%
-  # select(-arrival_date_year,
+  #select(-c(Start_Time, End_Time, State, Severity)) %>%
   #        -reservation_status,
   #        -reservation_status_date) %>% 
   add_n_miss() %>% 
@@ -319,7 +318,7 @@ nc_final_lasso %>%
 ca_mod <- ca %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(Start_Time, End_Time, State, Severity)) %>%
+  #select(-c(Start_Time, End_Time, State, Severity)) %>%
   # select(-arrival_date_year,
   #        -reservation_status,
   #        -reservation_status_date) %>% 
