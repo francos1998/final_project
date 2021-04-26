@@ -21,6 +21,21 @@ library(rmarkdown)         # for paged tables
 theme_set(theme_minimal()) # my favorite ggplot2 theme :)
 
 
+
+library(tidyverse)         # for graphing and data cleaning
+library(tidymodels)        # for modeling
+library(themis)            # for step functions for unbalanced data
+library(stacks)            # for stacking models
+library(naniar)            # for examining missing values (NAs)
+library(lubridate)         # for date manipulation
+library(moderndive)        # for King County housing data
+library(vip)               # for variable importance plots
+library(DALEX)             # for model interpretation  
+library(DALEXtra)          # for extension of DALEX
+library(patchwork)         # for combining plots nicely
+theme_set(theme_minimal()) # Lisa's favorite theme
+
+
 library(tidyverse)
 library(scales)
 library(lubridate)
@@ -708,7 +723,7 @@ top5_lasso_wf <-
 
 top5_lasso_wf
 
-tx_cv <- vfold_cv(top5_training, v = 3)
+top5_cv <- vfold_cv(top5_training, v = 3)
 penalty_grid <- grid_regular(penalty(),
                              levels = 10)
 
@@ -747,45 +762,118 @@ top5_mod %>%
 
 ```{r}
 #random forest modeling 
-ranger_recipe <- 
-  recipe(formula = Status ~ ., 
-         data = top5_training)
+# ranger_recipe <- 
+#   recipe(formula = Status ~ ., 
+#          data = top5_training)
+# 
+# ranger_recipe %>%
+#   prep() %>%
+#   juice()
+# 
+# ranger_spec <- 
+#   rand_forest(mtry = 6, 
+#               min_n = 10, 
+#               trees = 100) %>% 
+#   set_mode("classification") %>% 
+#   set_engine("ranger")
+# 
+# ranger_workflow <- 
+#   workflow() %>% 
+#   add_recipe(ranger_recipe) %>% 
+#   add_model(ranger_spec) 
+# 
+# ranger_fit <- ranger_workflow %>% 
+#   fit(top5_training)
+# 
+# set.seed(1211) # for reproducibility
+# traffic_cv <- vfold_cv(top5_training, v = 5)
+# 
+# metric <- metric_set(accuracy)
+# ctrl_res <- control_stack_resamples()
+# 
+# ranger_cv <- ranger_workflow %>% 
+#   fit_resamples(traffic_cv, 
+#                 metrics = metric,
+#                 control = ctrl_res)
+# 
+# # Evaluation metrics averaged over all folds:
+# collect_metrics(ranger_cv)
+# 
+# 
+# ranger_grid <-
+#   grid_regular(finalize(mtry(),
+#                         top5_training %>%
+#                           select(-Status)),
+#                min_n(),
+#                levels = 3)
+# 
+# ranger_tune <-
+#   ranger_workflow %>%
+#   tune_grid(
+#     resamples = top5_cv,
+#     grid = ranger_grid,
+#     control = ctrl_grid
+#   )
+# 
+# 
+# ranger_tune %>%
+#   collect_metrics()
+```
 
-ranger_recipe %>%
-  prep() %>%
+
+
+```{r}
+#classification rf 
+
+rf_recipe <- 
+  recipe(Status ~ .,
+         data = top5_training) %>% 
+  step_mutate_at(all_numeric(), 
+                 fn = ~as.numeric(.))
+
+
+rf_recipe %>% 
+  prep() %>% 
   juice()
 
-ranger_spec <- 
-  rand_forest(mtry = 6, 
-              min_n = 10, 
-              trees = 100) %>% 
+
+rf_model <- 
+  rand_forest(mtry = tune(), 
+              min_n = tune(), 
+              trees = 10) %>% 
   set_mode("classification") %>% 
   set_engine("ranger")
 
-ranger_workflow <- 
+rf_workflow <-
   workflow() %>% 
-  add_recipe(ranger_recipe) %>% 
-  add_model(ranger_spec) 
+  add_recipe(rf_recipe) %>% 
+  add_model(rf_model)
 
-ranger_fit <- ranger_workflow %>% 
-  fit(top5_training)
 
-ranger_grid <- 
+rf_penalty_grid <- 
   grid_regular(finalize(mtry(),
                         top5_training %>%
                           select(-Status)),
                min_n(),
                levels = 3)
 
-ranger_tune <- 
-  ranger_workflow %>% 
+
+traffic_cv <- vfold_cv(top5_training,
+                       v = 5)
+
+rf_tune <- 
+  rf_workflow %>% 
   tune_grid(
-    resamples = tx_cv,
-    grid = ranger_grid,
-    # control = ctrl_grid
+    resamples = traffic_cv,
+    grid = rf_penalty_grid,
+    control = control_stack_grid()
   )
 
-ranger_tune %>%
-  collect_metrics()
 ```
+
+
+
+
+
+
 
