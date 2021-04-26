@@ -672,7 +672,7 @@ traffic_mod$Junction <- as.factor(traffic_mod$Junction)
 traffic_mod$Traffic_Signal <- as.factor(traffic_mod$Traffic_Signal)
  
 
-set.seed(327) #for reproducibility
+set.seed(494) #for reproducibility
 
 # Randomly assigns 75% of the data to training.
 traffic_split <- initial_split(traffic_mod, 
@@ -685,6 +685,8 @@ traffic_testing <- testing(traffic_split)
 
 ```{r}
 #lasso
+set.seed(494)
+
 lasso_recipe <-
   recipe(Status ~ .,
          data = traffic_training) %>%
@@ -721,7 +723,7 @@ penalty_grid <- grid_regular(penalty(),
                              levels = 10)
 
 # add ctrl_grid - assures predictions and workflows are saved
-ctrl_grid <- control_stack_grid()
+ctrl_grid <- control_stack_resamples()
 
 metric <- metric_set(accuracy)
 
@@ -823,6 +825,7 @@ lasso_tune %>%
 
 ```{r}
 #classification rf 
+set.seed(494)
 
 rf_recipe <- 
   recipe(Status ~ .,
@@ -858,50 +861,28 @@ rf_penalty_grid <-
                levels = 3)
 
 
-traffic_cv <- vfold_cv(traffic_training,
-                       v = 5)
+# traffic_cv <- vfold_cv(traffic_training,
+#                        v = 5)
 
 rf_tune <- 
   rf_workflow %>% 
   tune_grid(
     resamples = traffic_cv,
     grid = rf_penalty_grid,
-    control = control_stack_grid()
+    control = ctrl_grid
   )
 
 rf_tune %>%
   collect_metrics()
 ```
 
-```{r}
-set.seed(494)
 
-knn_mod <-
-  nearest_neighbor(
-    neighbors = tune("k")
-  ) %>%
-  set_engine("kknn") %>% 
-  set_mode("classification")
-
-# create the workflow
-knn_wf <- 
-  workflow() %>% 
-  add_model(knn_mod) %>%
-  add_recipe(rf_recipe)
-
-# tune it using 4 tuning parameters
-knn_tune <- 
-  knn_wf %>% 
-  tune_grid(
-    traffic_cv,
-    grid = 4,
-    control = control_stack_resamples()
-  )
-```
 
 
 ```{r}
 #decision trees
+set.seed(494)
+
 tree_model <- 
   decision_tree() %>% 
   set_mode("classification") %>% 
@@ -915,35 +896,35 @@ tree_workflow <-
 tree_fit <- tree_workflow %>% 
   fit_resamples(traffic_cv, 
                 # metrics = metric,
-                control = control_stack_resamples())
+                control = ctrl_grid)
 
 collect_metrics(tree_fit)
 ```
 
 ```{r}
-set.seed(494)
-
-knn_mod <-
-  nearest_neighbor(
-    neighbors = tune("k")
-  ) %>%
-  set_engine("kknn") %>% 
-  set_mode("classification")
-
-# create the workflow
-knn_wf <- 
-  workflow() %>% 
-  add_model(knn_mod) %>%
-  add_recipe(rf_recipe)
-
-# tune it using 4 tuning parameters
-knn_tune <- 
-  knn_wf %>% 
-  tune_grid(
-    traffic_cv,
-    grid = 4,
-    control = control_stack_resamples()
-  )
+# set.seed(494)
+# 
+# knn_mod <-
+#   nearest_neighbor(
+#     neighbors = tune("k")
+#   ) %>%
+#   set_engine("kknn") %>% 
+#   set_mode("classification")
+# 
+# # create the workflow
+# knn_wf <- 
+#   workflow() %>% 
+#   add_model(knn_mod) %>%
+#   add_recipe(rf_recipe)
+# 
+# # tune it using 4 tuning parameters
+# knn_tune <- 
+#   knn_wf %>% 
+#   tune_grid(
+#     traffic_cv,
+#     grid = 4,
+#     control = ctrl_grid
+#   )
 ```
 
 
@@ -957,12 +938,13 @@ rf_tune %>%
 
 tree_fit %>%
   collect_metrics()
+```
 
-
+```{r}
 lending_stack <- 
   stacks() %>% 
   add_candidates(lasso_tune) %>%
-  add_candidates(rf_tune) 
+  add_candidates(rf_tune) %>%
   add_candidates(tree_fit)
 ```
 
