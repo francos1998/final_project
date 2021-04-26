@@ -56,6 +56,16 @@ cars %>%
   summarize(Count=n()) %>%
   arrange(desc(Count))
 
+cars %>%
+  group_by(State) %>%
+  summarize(Count=n()) %>%
+  arrange(desc(Count))
+
+cars %>%
+  group_by(Weather_Condition) %>%
+  summarize(Count=n()) %>%
+  arrange(desc(Count))
+
 weather <-
   cars %>%
   group_by(Weather_Condition) %>%
@@ -146,6 +156,10 @@ traffic_weather <- traffic_time %>%
 
 traffic_final <- traffic_weather
 
+traffic_final %>%
+  group_by(Weather_Condition) %>%
+  summarize(Count=n()) %>%
+  arrange(desc(Count))
 ```
 
 
@@ -170,6 +184,8 @@ ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) +
 # good indicators : Crossing, Junction, Sunrise_Sunset, Civil_Twilight, 
 
 ```{r}
+
+
 ca <- 
   traffic_final %>%
   filter(State=="CA")
@@ -318,7 +334,11 @@ nc_final_lasso %>%
 ca_mod <- ca %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
+<<<<<<< HEAD
   #select(-c(Start_Time, End_Time, State, Severity)) %>%
+=======
+  select(-c(State, Severity)) %>%
+>>>>>>> f007ca9322d6d6fba95e7f37c2b3dac7c5763bc6
   # select(-arrival_date_year,
   #        -reservation_status,
   #        -reservation_status_date) %>% 
@@ -601,6 +621,107 @@ fl_final_lasso %>%
   tidy()
 
 fl_final_lasso %>% 
+  pull_workflow_fit() %>% 
+  vip()
+```
+
+
+```{r}
+#top 5 
+
+top5_mod <- traffic_final %>% 
+  mutate(Status = as.factor(Status)) %>% 
+  mutate(across(where(is.character), as.factor)) %>% 
+  select(-c(State, Severity, Year, Day)) %>%
+  # select(-arrival_date_year,
+  #        -reservation_status,
+  #        -reservation_status_date) %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all)
+
+
+ top5_mod$Crossing <- as.factor(top5_mod$Crossing)
+top5_mod$Month <- as.numeric(top5_mod$Month)
+ top5_mod$Wday <- as.numeric(top5_mod$Wday)
+ top5_mod$Hour <- as.numeric(top5_mod$Hour)
+  top5_mod$Duration <- as.numeric(top5_mod$Duration)
+ top5_mod$Junction <- as.factor(top5_mod$Junction)
+ top5_mod$Traffic_Signal <- as.factor(top5_mod$Traffic_Signal)
+ 
+
+set.seed(327) #for reproducibility
+
+# Randomly assigns 75% of the data to training.
+top5_split <- initial_split(top5_mod, 
+                             prop = .50)
+top5_split
+
+top5_training <- training(top5_split)
+top5_testing <- testing(top5_split)
+
+#creating recipe
+top5_recipe <- recipe(Status ~ .,
+                       data = top5_training) %>% 
+  step_mutate(County, 
+              County = fct_lump_n(County, n = 5)) %>% 
+  step_mutate(City, 
+              City = fct_lump_n(City, n = 5)) %>% 
+  step_normalize(all_predictors(),
+                -all_nominal(),
+                -all_outcomes()) %>% 
+  step_dummy(all_nominal(),
+             -all_outcomes()) 
+
+top5_recipe %>% 
+  prep() %>% #applied to training data by default since that's in the recipe
+  juice() 
+
+
+#setting up lasso for north carolina
+top5_lasso_mod <- 
+  logistic_reg(mixture = 1) %>% 
+  set_engine("glmnet") %>% 
+  set_args(penalty = tune()) %>% 
+  set_mode("classification")
+
+
+top5_lasso_wf <- 
+  workflow() %>% 
+  add_recipe(top5_recipe) %>% 
+  add_model(top5_lasso_mod)
+
+top5_lasso_wf
+
+tx_cv <- vfold_cv(top5_training, v = 3)
+penalty_grid <- grid_regular(penalty(),
+                             levels = 10)
+
+top5_lasso_tune <- 
+  top5_lasso_wf %>% 
+  tune_grid(
+    resamples = tx_cv,
+    grid = penalty_grid
+    )
+
+top5_lasso_tune
+
+top5_lasso_tune %>%
+    collect_metrics()
+
+best_param_top5 <- top5_lasso_tune %>% 
+  select_best(metric = "accuracy")
+best_param_top5
+
+top5_final_lasso <- top5_lasso_wf %>% 
+  finalize_workflow(best_param_top5) %>% 
+  fit(data = top5_training)
+
+top5_final_lasso %>% 
+  pull_workflow_fit() %>% 
+  tidy()
+
+top5_final_lasso %>% 
   pull_workflow_fit() %>% 
   vip()
 ```
