@@ -184,8 +184,6 @@ ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) +
 # good indicators : Crossing, Junction, Sunrise_Sunset, Civil_Twilight, 
 
 ```{r}
-
-
 ca <- 
   traffic_final %>%
   filter(State=="CA")
@@ -242,7 +240,8 @@ ca %>%
 nc_mod <- nc %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
-  #select(-c(Start_Time, End_Time, State, Severity)) %>%
+  select(-c(State, Severity)) %>%
+  # select(-arrival_date_year,
   #        -reservation_status,
   #        -reservation_status_date) %>% 
   add_n_miss() %>% 
@@ -252,6 +251,10 @@ nc_mod <- nc %>%
  nc_mod$Crossing <- as.factor(nc_mod$Crossing)
  nc_mod$Junction <- as.factor(nc_mod$Junction)
  nc_mod$Traffic_Signal <- as.factor(nc_mod$Traffic_Signal)
+ nc_mod$Month <- as.numeric(nc_mod$Month)
+ nc_mod$Wday <- as.numeric(nc_mod$Wday)
+nc_mod$Hour <- as.numeric(nc_mod$Hour)
+  nc_mod$Duration <- as.numeric(nc_mod$Duration)
 
 set.seed(327) #for reproducibility
 
@@ -334,11 +337,7 @@ nc_final_lasso %>%
 ca_mod <- ca %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
-<<<<<<< HEAD
-  #select(-c(Start_Time, End_Time, State, Severity)) %>%
-=======
   select(-c(State, Severity)) %>%
->>>>>>> f007ca9322d6d6fba95e7f37c2b3dac7c5763bc6
   # select(-arrival_date_year,
   #        -reservation_status,
   #        -reservation_status_date) %>% 
@@ -351,6 +350,10 @@ ca_mod
  ca_mod$Crossing <- as.factor(ca_mod$Crossing)
  ca_mod$Junction <- as.factor(ca_mod$Junction)
  ca_mod$Traffic_Signal <- as.factor(ca_mod$Traffic_Signal)
+ ca_mod$Month <- as.numeric(ca_mod$Month)
+ ca_mod$Wday <- as.numeric(ca_mod$Wday)
+ ca_mod$Hour <- as.numeric(ca_mod$Hour)
+  ca_mod$Duration <- as.numeric(ca_mod$Duration)
 
 set.seed(327) #for reproducibility
 
@@ -627,7 +630,19 @@ fl_final_lasso %>%
 
 
 ```{r}
-#top 5 
+set.seed(494) #for reproducible 5-fold
+traffic_cv <- vfold_cv(top5_training,
+                       v = 5)
+
+penalty_grid <- grid_regular(penalty(),
+                             levels = 10)
+
+# add ctrl_grid - assures predictions and workflows are saved
+ctrl_grid <- control_stack_grid()
+```
+
+```{r}
+#lasso modeling 
 
 top5_mod <- traffic_final %>% 
   mutate(Status = as.factor(Status)) %>% 
@@ -724,6 +739,53 @@ top5_final_lasso %>%
 top5_final_lasso %>% 
   pull_workflow_fit() %>% 
   vip()
+
+
+top5_mod %>% 
+  count(Status)
 ```
 
+```{r}
+#random forest modeling 
+ranger_recipe <- 
+  recipe(formula = Status ~ ., 
+         data = top5_training)
+
+ranger_recipe %>%
+  prep() %>%
+  juice()
+
+ranger_spec <- 
+  rand_forest(mtry = 6, 
+              min_n = 10, 
+              trees = 100) %>% 
+  set_mode("classification") %>% 
+  set_engine("ranger")
+
+ranger_workflow <- 
+  workflow() %>% 
+  add_recipe(ranger_recipe) %>% 
+  add_model(ranger_spec) 
+
+ranger_fit <- ranger_workflow %>% 
+  fit(top5_training)
+
+ranger_grid <- 
+  grid_regular(finalize(mtry(),
+                        top5_training %>%
+                          select(-Status)),
+               min_n(),
+               levels = 3)
+
+ranger_tune <- 
+  ranger_workflow %>% 
+  tune_grid(
+    resamples = tx_cv,
+    grid = ranger_grid,
+    # control = ctrl_grid
+  )
+
+ranger_tune %>%
+  collect_metrics()
+```
 
