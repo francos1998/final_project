@@ -170,7 +170,7 @@ traffic_mod$Junction <- as.factor(traffic_mod$Junction)
 traffic_mod$Traffic_Signal <- as.factor(traffic_mod$Traffic_Signal)
  
 
-set.seed(327) #for reproducibility
+set.seed(494) #for reproducibility
 
 # Randomly assigns 75% of the data to training.
 traffic_split <- initial_split(traffic_mod, 
@@ -181,36 +181,36 @@ traffic_training <- training(traffic_split)
 traffic_testing <- testing(traffic_split)
 ```
 
-
 ```{r}
-#lasso 
+#lasso
+set.seed(494)
 
-lasso_recipe <- 
+lasso_recipe <-
   recipe(Status ~ .,
-         data = traffic_training) %>% 
+         data = traffic_training) %>%
   step_mutate(County,
                County = fct_lump_n(County, n = 5)) %>%
    step_mutate(City,
                City = fct_lump_n(City, n = 5)) %>%
-  step_dummy(all_nominal(),
-             -all_outcomes()) %>% 
   step_normalize(all_predictors(),
                  -all_nominal(),
-                 -all_outcomes())
+                 -all_outcomes()) %>%
+  step_dummy(all_nominal(),
+             -all_outcomes())
 
-lasso_recipe %>% 
-  prep() %>% 
+lasso_recipe %>%
+  prep() %>%
   juice()
 
-lasso_mod <- 
-  logistic_reg(mixture = 1) %>% 
-  set_engine("glmnet") %>% 
-  set_args(penalty = tune()) %>% 
+lasso_mod <-
+  logistic_reg(mixture = 1) %>%
+  set_engine("glmnet") %>%
+  set_args(penalty = tune()) %>%
   set_mode("classification")
 
 lasso_wf <-
-  workflow() %>% 
-  add_recipe(lasso_recipe) %>% 
+  workflow() %>%
+  add_recipe(lasso_recipe) %>%
   add_model(lasso_mod)
 
 set.seed(494) #for reproducible 5-fold
@@ -221,11 +221,13 @@ penalty_grid <- grid_regular(penalty(),
                              levels = 10)
 
 # add ctrl_grid - assures predictions and workflows are saved
-ctrl_grid <- control_stack_grid()
+ctrl_grid <- control_stack_resamples()
+
+metric <- metric_set(accuracy)
 
 # tune the model
-lasso_tune <- 
-  lasso_wf %>% 
+lasso_tune <-
+  lasso_wf %>%
   tune_grid(
     resamples = traffic_cv,
     grid = penalty_grid,
@@ -235,6 +237,145 @@ lasso_tune <-
 lasso_tune %>%
   collect_metrics()
 ```
+
+```{r}
+#classification rf 
+set.seed(494)
+
+rf_recipe <- 
+  recipe(Status ~ .,
+         data = traffic_training) %>% 
+  step_mutate_at(all_numeric(), 
+                 fn = ~as.numeric(.))
+
+
+rf_recipe %>% 
+  prep() %>% 
+  juice()
+
+
+rf_model <-
+  rand_forest(mtry = tune(),
+              min_n = tune(),
+              trees = 10) %>%
+  set_mode("classification") %>%
+  set_engine("ranger")
+
+
+rf_workflow <-
+  workflow() %>% 
+  add_recipe(rf_recipe) %>% 
+  add_model(rf_model)
+
+
+rf_penalty_grid <- 
+  grid_regular(finalize(mtry(),
+                        traffic_training %>%
+                          select(-Status)),
+               min_n(),
+               levels = 3)
+
+
+# traffic_cv <- vfold_cv(traffic_training,
+#                        v = 5)
+
+rf_tune <- 
+  rf_workflow %>% 
+  tune_grid(
+    resamples = traffic_cv,
+    grid = rf_penalty_grid,
+    control = ctrl_grid
+  )
+
+rf_tune %>%
+  collect_metrics()
+```
+
+
+
+
+```{r}
+#decision trees
+set.seed(494)
+
+tree_model <- 
+  decision_tree() %>% 
+  set_mode("classification") %>% 
+  set_engine("rpart")
+
+tree_workflow <-
+  workflow() %>% 
+  add_recipe(rf_recipe) %>% 
+  add_model(tree_model)
+
+tree_fit <- tree_workflow %>% 
+  fit_resamples(traffic_cv, 
+                # metrics = metric,
+                control = ctrl_grid)
+
+collect_metrics(tree_fit)
+```
+
+```{r}
+set.seed(494)
+
+knn_mod <-
+  nearest_neighbor(
+    neighbors = tune("k")
+  ) %>%
+  set_engine("kknn") %>%
+  set_mode("classification")
+
+# create the workflow
+knn_wf <-
+  workflow() %>%
+  add_model(knn_mod) %>%
+  add_recipe(rf_recipe)
+
+#tune it using 4 tuning parameters
+knn_tune <-
+  knn_wf %>%
+  tune_grid(
+    traffic_cv,
+    grid = 4,
+    control = ctrl_grid
+  )
+```
+
+
+# model stacking 
+```{r}
+lasso_tune %>%
+  collect_metrics()
+
+rf_tune %>%
+  collect_metrics()
+
+tree_fit %>%
+  collect_metrics()
+```
+
+
+```{r}
+lending_stack <-
+  stacks() %>%
+  add_candidates(lasso_tune) %>%
+  add_candidates(rf_tune) %>%
+  add_candidates(tree_fit)
+```
+
+```{r}
+lending_blend <-
+  lending_stack %>% 
+  blend_predictions()
+lending_blend
+```
+
+```{r}
+autoplot(lending_blend)
+```
+
+
 
 
 

@@ -206,252 +206,240 @@ ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) +
 # good indicators : Crossing, Junction, Sunrise_Sunset, Civil_Twilight, 
 
 ```{r}
-ca <- 
-  traffic_final %>%
-  filter(State=="CA")
-
-tx <-
-  traffic_final %>%
-  filter(State=="TX")
-
-fl <-
-  traffic_final %>%
-  filter(State=="FL")
-
-sc <-
-  traffic_final %>%
-  filter(State=="SC")
-
-nc <-
-  traffic_final %>%
-  filter(State=="NC")
+# ca <- 
+#   traffic_final %>%
+#   filter(State=="CA")
+# 
+# tx <-
+#   traffic_final %>%
+#   filter(State=="TX")
+# 
+# fl <-
+#   traffic_final %>%
+#   filter(State=="FL")
+# 
+# sc <-
+#   traffic_final %>%
+#   filter(State=="SC")
+# 
+# nc <-
+#   traffic_final %>%
+#   filter(State=="NC")
 ```
 
 
 ```{r}
-nc %>% 
-  select(where(is.numeric)) %>% 
-  pivot_longer(cols = everything(),
-               names_to = "variable", 
-               values_to = "value") %>% 
-  ggplot(aes(x = value)) +
-  geom_histogram(bins = 30) +
-  facet_wrap(vars(variable), 
-             scales = "free")
+# nc %>% 
+#   select(where(is.numeric)) %>% 
+#   pivot_longer(cols = everything(),
+#                names_to = "variable", 
+#                values_to = "value") %>% 
+#   ggplot(aes(x = value)) +
+#   geom_histogram(bins = 30) +
+#   facet_wrap(vars(variable), 
+#              scales = "free")
 ```
 
 > Humidity, Wind_Chill and Temperature are left skewed, Wind_Speed is right skewed.
-
-
-```{r}
-nc %>% 
-  add_n_miss() %>% 
-  count(n_miss_all)
-
-ca %>%
-  add_n_miss() %>% 
-  count(n_miss_all)
-```
-
 
 
 ### Modelling 
 
 ```{r}
 #north carolina
-nc_mod <- nc %>% 
-  mutate(Status = as.factor(Status)) %>% 
-  mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(State, Severity)) %>%
-  # select(-arrival_date_year,
-  #        -reservation_status,
-  #        -reservation_status_date) %>% 
-  add_n_miss() %>% 
-  filter(n_miss_all == 0) %>% 
-  select(-n_miss_all)
-
- nc_mod$Crossing <- as.factor(nc_mod$Crossing)
- nc_mod$Junction <- as.factor(nc_mod$Junction)
- nc_mod$Traffic_Signal <- as.factor(nc_mod$Traffic_Signal)
- nc_mod$Month <- as.numeric(nc_mod$Month)
- nc_mod$Wday <- as.numeric(nc_mod$Wday)
-nc_mod$Hour <- as.numeric(nc_mod$Hour)
-  nc_mod$Duration <- as.numeric(nc_mod$Duration)
-
-set.seed(327) #for reproducibility
-
-# Randomly assigns 50% of the data to training.
-nc_split <- initial_split(nc_mod, 
-                             prop = .50)
-nc_split
-
-nc_training <- training(nc_split)
-nc_testing <- testing(nc_split)
-
-#creating recipe
-nc_recipe <- recipe(Status ~ .,
-                       data = nc_training) %>% 
-  step_mutate(County, 
-              County = fct_lump_n(County, n = 5)) %>% 
-  step_mutate(City, 
-              City = fct_lump_n(City, n = 5)) %>% 
-  step_normalize(all_predictors(),
-                -all_nominal(),
-                -all_outcomes()) %>% 
-  step_dummy(all_nominal(),
-             -all_outcomes()) 
-
-
-nc_recipe %>% 
-  prep() %>% #applied to training data by default since that's in the recipe
-  juice() 
-
-
-#setting up lasso for north carolina
-nc_lasso_mod <- 
-  logistic_reg(mixture = 1) %>% 
-  set_engine("glmnet") %>% 
-  set_args(penalty = tune()) %>% 
-  set_mode("classification")
-
-nc_lasso_wf <- 
-  workflow() %>% 
-  add_recipe(nc_recipe) %>% 
-  add_model(nc_lasso_mod)
-
-nc_lasso_wf
-
-nc_cv <- vfold_cv(nc_training, v = 3)
-penalty_grid <- grid_regular(penalty(),
-                             levels = 5)
-penalty_grid 
-
-nc_lasso_tune <- 
-  nc_lasso_wf %>% 
-  tune_grid(
-    resamples = nc_cv,
-    grid = penalty_grid
-    )
-
- nc_lasso_tune %>%
-   collect_metrics()
- 
-best_param_nc <- nc_lasso_tune %>% 
-  select_best(metric = "accuracy")
-best_param_nc
-
-nc_final_lasso <- nc_lasso_wf %>% 
-  finalize_workflow(best_param_nc) %>% 
-  fit(data = nc_training)
-
-nc_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  tidy()
-
-nc_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  vip()
+# nc_mod <- nc %>% 
+#   mutate(Status = as.factor(Status)) %>% 
+#   mutate(across(where(is.character), as.factor)) %>% 
+#   select(-c(State, Severity)) %>%
+#   # select(-arrival_date_year,
+#   #        -reservation_status,
+#   #        -reservation_status_date) %>% 
+#   add_n_miss() %>% 
+#   filter(n_miss_all == 0) %>% 
+#   select(-n_miss_all)
+# 
+#  nc_mod$Crossing <- as.factor(nc_mod$Crossing)
+#  nc_mod$Junction <- as.factor(nc_mod$Junction)
+#  nc_mod$Traffic_Signal <- as.factor(nc_mod$Traffic_Signal)
+#  nc_mod$Month <- as.numeric(nc_mod$Month)
+#  nc_mod$Wday <- as.numeric(nc_mod$Wday)
+# nc_mod$Hour <- as.numeric(nc_mod$Hour)
+#   nc_mod$Duration <- as.numeric(nc_mod$Duration)
+# 
+# set.seed(327) #for reproducibility
+# 
+# # Randomly assigns 50% of the data to training.
+# nc_split <- initial_split(nc_mod, 
+#                              prop = .50)
+# nc_split
+# 
+# nc_training <- training(nc_split)
+# nc_testing <- testing(nc_split)
+# 
+# #creating recipe
+# nc_recipe <- recipe(Status ~ .,
+#                        data = nc_training) %>% 
+#   step_mutate(County, 
+#               County = fct_lump_n(County, n = 5)) %>% 
+#   step_mutate(City, 
+#               City = fct_lump_n(City, n = 5)) %>% 
+#   step_normalize(all_predictors(),
+#                 -all_nominal(),
+#                 -all_outcomes()) %>% 
+#   step_dummy(all_nominal(),
+#              -all_outcomes()) 
+# 
+# 
+# nc_recipe %>% 
+#   prep() %>% #applied to training data by default since that's in the recipe
+#   juice() 
+# 
+# 
+# #setting up lasso for north carolina
+# nc_lasso_mod <- 
+#   logistic_reg(mixture = 1) %>% 
+#   set_engine("glmnet") %>% 
+#   set_args(penalty = tune()) %>% 
+#   set_mode("classification")
+# 
+# nc_lasso_wf <- 
+#   workflow() %>% 
+#   add_recipe(nc_recipe) %>% 
+#   add_model(nc_lasso_mod)
+# 
+# nc_lasso_wf
+# 
+# nc_cv <- vfold_cv(nc_training, v = 3)
+# penalty_grid <- grid_regular(penalty(),
+#                              levels = 5)
+# penalty_grid 
+# 
+# nc_lasso_tune <- 
+#   nc_lasso_wf %>% 
+#   tune_grid(
+#     resamples = nc_cv,
+#     grid = penalty_grid
+#     )
+# 
+#  nc_lasso_tune %>%
+#    collect_metrics()
+#  
+# best_param_nc <- nc_lasso_tune %>% 
+#   select_best(metric = "accuracy")
+# best_param_nc
+# 
+# nc_final_lasso <- nc_lasso_wf %>% 
+#   finalize_workflow(best_param_nc) %>% 
+#   fit(data = nc_training)
+# 
+# nc_final_lasso %>% 
+#   pull_workflow_fit() %>% 
+#   tidy()
+# 
+# nc_final_lasso %>% 
+#   pull_workflow_fit() %>% 
+#   vip()
 ```
 
 ```{r}
 #cali 
 
-ca_mod <- ca %>% 
-  mutate(Status = as.factor(Status)) %>% 
-  mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(State, Severity)) %>%
-  # select(-arrival_date_year,
-  #        -reservation_status,
-  #        -reservation_status_date) %>% 
-  add_n_miss() %>% 
-  filter(n_miss_all == 0) %>% 
-  select(-n_miss_all)
-
-ca_mod
-
- ca_mod$Crossing <- as.factor(ca_mod$Crossing)
- ca_mod$Junction <- as.factor(ca_mod$Junction)
- ca_mod$Traffic_Signal <- as.factor(ca_mod$Traffic_Signal)
- ca_mod$Month <- as.numeric(ca_mod$Month)
- ca_mod$Wday <- as.numeric(ca_mod$Wday)
- ca_mod$Hour <- as.numeric(ca_mod$Hour)
-  ca_mod$Duration <- as.numeric(ca_mod$Duration)
-
-set.seed(327) #for reproducibility
-
-# Randomly assigns 75% of the data to training.
-ca_split <- initial_split(ca_mod, 
-                             prop = .50)
-ca_split
-
-ca_training <- training(ca_split)
-ca_testing <- testing(ca_split)
-
-#creating recipe
-ca_recipe <- recipe(Status ~ .,
-                       data = ca_training) %>% 
-  step_mutate(County, 
-              County = fct_lump_n(County, n = 5)) %>% 
-  step_mutate(City, 
-              City = fct_lump_n(City, n = 5)) %>% 
-  step_normalize(all_predictors(),
-                -all_nominal(),
-                -all_outcomes()) %>% 
-  step_dummy(all_nominal(),
-             -all_outcomes()) 
-
-
-ca_recipe %>% 
-  prep() %>% #applied to training data by default since that's in the recipe
-  juice() 
-
-
-#setting up lasso for north carolina
-ca_lasso_mod <- 
-  logistic_reg(mixture = 1) %>% 
-  set_engine("glmnet") %>% 
-  set_args(penalty = tune()) %>% 
-  set_mode("classification")
-
-ca_lasso_wf <- 
-  workflow() %>% 
-  add_recipe(ca_recipe) %>% 
-  add_model(ca_lasso_mod)
-
-ca_lasso_wf
-
-ca_cv <- vfold_cv(ca_training, v = 3)
-penalty_grid <- grid_regular(penalty(),
-                             levels = 10)
-penalty_grid 
-
-ca_lasso_tune <- 
-  ca_lasso_wf %>% 
-  tune_grid(
-    resamples = ca_cv,
-    grid = penalty_grid
-    )
-
-ca_lasso_tune
-
-ca_lasso_tune %>%
-    collect_metrics()
-
-best_param_ca <- ca_lasso_tune %>% 
-  select_best(metric = "accuracy")
-best_param_ca
-
-ca_final_lasso <- ca_lasso_wf %>% 
-  finalize_workflow(best_param_ca) %>% 
-  fit(data = ca_training)
-
-ca_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  tidy()
-
-ca_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  vip()
+# ca_mod <- ca %>% 
+#   mutate(Status = as.factor(Status)) %>% 
+#   mutate(across(where(is.character), as.factor)) %>% 
+#   select(-c(State, Severity)) %>%
+#   # select(-arrival_date_year,
+#   #        -reservation_status,
+#   #        -reservation_status_date) %>% 
+#   add_n_miss() %>% 
+#   filter(n_miss_all == 0) %>% 
+#   select(-n_miss_all)
+# 
+# ca_mod
+# 
+#  ca_mod$Crossing <- as.factor(ca_mod$Crossing)
+#  ca_mod$Junction <- as.factor(ca_mod$Junction)
+#  ca_mod$Traffic_Signal <- as.factor(ca_mod$Traffic_Signal)
+#  ca_mod$Month <- as.numeric(ca_mod$Month)
+#  ca_mod$Wday <- as.numeric(ca_mod$Wday)
+#  ca_mod$Hour <- as.numeric(ca_mod$Hour)
+#   ca_mod$Duration <- as.numeric(ca_mod$Duration)
+# 
+# set.seed(327) #for reproducibility
+# 
+# # Randomly assigns 75% of the data to training.
+# ca_split <- initial_split(ca_mod, 
+#                              prop = .50)
+# ca_split
+# 
+# ca_training <- training(ca_split)
+# ca_testing <- testing(ca_split)
+# 
+# #creating recipe
+# ca_recipe <- recipe(Status ~ .,
+#                        data = ca_training) %>% 
+#   step_mutate(County, 
+#               County = fct_lump_n(County, n = 5)) %>% 
+#   step_mutate(City, 
+#               City = fct_lump_n(City, n = 5)) %>% 
+#   step_normalize(all_predictors(),
+#                 -all_nominal(),
+#                 -all_outcomes()) %>% 
+#   step_dummy(all_nominal(),
+#              -all_outcomes()) 
+# 
+# 
+# ca_recipe %>% 
+#   prep() %>% #applied to training data by default since that's in the recipe
+#   juice() 
+# 
+# 
+# #setting up lasso for north carolina
+# ca_lasso_mod <- 
+#   logistic_reg(mixture = 1) %>% 
+#   set_engine("glmnet") %>% 
+#   set_args(penalty = tune()) %>% 
+#   set_mode("classification")
+# 
+# ca_lasso_wf <- 
+#   workflow() %>% 
+#   add_recipe(ca_recipe) %>% 
+#   add_model(ca_lasso_mod)
+# 
+# ca_lasso_wf
+# 
+# ca_cv <- vfold_cv(ca_training, v = 3)
+# penalty_grid <- grid_regular(penalty(),
+#                              levels = 10)
+# penalty_grid 
+# 
+# ca_lasso_tune <- 
+#   ca_lasso_wf %>% 
+#   tune_grid(
+#     resamples = ca_cv,
+#     grid = penalty_grid
+#     )
+# 
+# ca_lasso_tune
+# 
+# ca_lasso_tune %>%
+#     collect_metrics()
+# 
+# best_param_ca <- ca_lasso_tune %>% 
+#   select_best(metric = "accuracy")
+# best_param_ca
+# 
+# ca_final_lasso <- ca_lasso_wf %>% 
+#   finalize_workflow(best_param_ca) %>% 
+#   fit(data = ca_training)
+# 
+# ca_final_lasso %>% 
+#   pull_workflow_fit() %>% 
+#   tidy()
+# 
+# ca_final_lasso %>% 
+#   pull_workflow_fit() %>% 
+#   vip()
 ```
 
 
@@ -459,201 +447,197 @@ ca_final_lasso %>%
 ```{r}
 #texas 
 
-tx_mod <- tx %>% 
-  mutate(Status = as.factor(Status)) %>% 
-  mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(State, Severity)) %>%
-  # select(-arrival_date_year,
-  #        -reservation_status,
-  #        -reservation_status_date) %>% 
-  add_n_miss() %>% 
-  filter(n_miss_all == 0) %>% 
-  select(-n_miss_all)
-
-tx_mod
-
- tx_mod$Crossing <- as.factor(tx_mod$Crossing)
- tx_mod$Junction <- as.factor(tx_mod$Junction)
- tx_mod$Traffic_Signal <- as.factor(tx_mod$Traffic_Signal)
-
-set.seed(327) #for reproducibility
-
-# Randomly assigns 75% of the data to training.
-tx_split <- initial_split(tx_mod, 
-                             prop = .50)
-tx_split
-
-tx_training <- training(tx_split)
-tx_testing <- testing(tx_split)
-
-#creating recipe
-tx_recipe <- recipe(Status ~ .,
-                       data = tx_training) %>% 
-  # step_mutate(County, 
-  #             County = fct_lump_n(County, n = 5)) %>% 
-  # step_mutate(City, 
-  #             City = fct_lump_n(City, n = 5)) %>% 
-  step_normalize(all_predictors(),
-                -all_nominal(),
-                -all_outcomes()) %>% 
-  step_dummy(all_nominal(),
-             -all_outcomes()) 
-
-
-tx_recipe %>% 
-  prep() %>% #applied to training data by default since that's in the recipe
-  juice() 
-
-
-#setting up lasso for north carolina
-tx_lasso_mod <- 
-  logistic_reg(mixture = 1) %>% 
-  set_engine("glmnet") %>% 
-  set_args(penalty = tune()) %>% 
-  set_mode("classification")
-
-tx_lasso_wf <- 
-  workflow() %>% 
-  add_recipe(tx_recipe) %>% 
-  add_model(tx_lasso_mod)
-
-tx_lasso_wf
-
-tx_cv <- vfold_cv(tx_training, v = 3)
-penalty_grid <- grid_regular(penalty(),
-                             levels = 10)
-penalty_grid 
-
-tx_lasso_tune <- 
-  tx_lasso_wf %>% 
-  tune_grid(
-    resamples = tx_cv,
-    grid = penalty_grid
-    )
-
-tx_lasso_tune
-
-tx_lasso_tune %>%
-    collect_metrics()
-
-best_param_tx <- tx_lasso_tune %>% 
-  select_best(metric = "accuracy")
-best_param_tx
-
-tx_final_lasso <- tx_lasso_wf %>% 
-  finalize_workflow(best_param_tx) %>% 
-  fit(data = tx_training)
-
-tx_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  tidy()
-
-tx_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  vip()
+# tx_mod <- tx %>% 
+#   mutate(Status = as.factor(Status)) %>% 
+#   mutate(across(where(is.character), as.factor)) %>% 
+#   select(-c(State, Severity)) %>%
+#   # select(-arrival_date_year,
+#   #        -reservation_status,
+#   #        -reservation_status_date) %>% 
+#   add_n_miss() %>% 
+#   filter(n_miss_all == 0) %>% 
+#   select(-n_miss_all)
+# 
+# tx_mod
+# 
+#  tx_mod$Crossing <- as.factor(tx_mod$Crossing)
+#  tx_mod$Junction <- as.factor(tx_mod$Junction)
+#  tx_mod$Traffic_Signal <- as.factor(tx_mod$Traffic_Signal)
+# 
+# set.seed(327) #for reproducibility
+# 
+# # Randomly assigns 75% of the data to training.
+# tx_split <- initial_split(tx_mod, 
+#                              prop = .50)
+# tx_split
+# 
+# tx_training <- training(tx_split)
+# tx_testing <- testing(tx_split)
+# 
+# #creating recipe
+# tx_recipe <- recipe(Status ~ .,
+#                        data = tx_training) %>% 
+#   # step_mutate(County, 
+#   #             County = fct_lump_n(County, n = 5)) %>% 
+#   # step_mutate(City, 
+#   #             City = fct_lump_n(City, n = 5)) %>% 
+#   step_normalize(all_predictors(),
+#                 -all_nominal(),
+#                 -all_outcomes()) %>% 
+#   step_dummy(all_nominal(),
+#              -all_outcomes()) 
+# 
+# 
+# tx_recipe %>% 
+#   prep() %>% #applied to training data by default since that's in the recipe
+#   juice() 
+# 
+# 
+# #setting up lasso for north carolina
+# tx_lasso_mod <- 
+#   logistic_reg(mixture = 1) %>% 
+#   set_engine("glmnet") %>% 
+#   set_args(penalty = tune()) %>% 
+#   set_mode("classification")
+# 
+# tx_lasso_wf <- 
+#   workflow() %>% 
+#   add_recipe(tx_recipe) %>% 
+#   add_model(tx_lasso_mod)
+# 
+# tx_lasso_wf
+# 
+# tx_cv <- vfold_cv(tx_training, v = 3)
+# penalty_grid <- grid_regular(penalty(),
+#                              levels = 10)
+# penalty_grid 
+# 
+# tx_lasso_tune <- 
+#   tx_lasso_wf %>% 
+#   tune_grid(
+#     resamples = tx_cv,
+#     grid = penalty_grid
+#     )
+# 
+# tx_lasso_tune
+# 
+# tx_lasso_tune %>%
+#     collect_metrics()
+# 
+# best_param_tx <- tx_lasso_tune %>% 
+#   select_best(metric = "accuracy")
+# best_param_tx
+# 
+# tx_final_lasso <- tx_lasso_wf %>% 
+#   finalize_workflow(best_param_tx) %>% 
+#   fit(data = tx_training)
+# 
+# tx_final_lasso %>% 
+#   pull_workflow_fit() %>% 
+#   tidy()
+# 
+# tx_final_lasso %>% 
+#   pull_workflow_fit() %>% 
+#   vip()
+# ```
+# 
+# ```{r}
+# #florida 
+# 
+# fl_mod <- fl %>% 
+#   mutate(Status = as.factor(Status)) %>% 
+#   mutate(across(where(is.character), as.factor)) %>% 
+#   select(-c(State, Severity)) %>%
+#   # select(-arrival_date_year,
+#   #        -reservation_status,
+#   #        -reservation_status_date) %>% 
+#   add_n_miss() %>% 
+#   filter(n_miss_all == 0) %>% 
+#   select(-n_miss_all)
+# 
+# fl_mod
+# 
+#  fl_mod$Crossing <- as.factor(fl_mod$Crossing)
+#  fl_mod$Junction <- as.factor(fl_mod$Junction)
+#  fl_mod$Traffic_Signal <- as.factor(fl_mod$Traffic_Signal)
+# 
+# set.seed(327) #for reproducibility
+# 
+# # Randomly assigns 75% of the data to training.
+# fl_split <- initial_split(fl_mod, 
+#                              prop = .50)
+# fl_split
+# 
+# fl_training <- training(fl_split)
+# fl_testing <- testing(fl_split)
+# 
+# #creating recipe
+# fl_recipe <- recipe(Status ~ .,
+#                        data = fl_training) %>% 
+#   step_mutate(County, 
+#               County = fct_lump_n(County, n = 5)) %>% 
+#   step_mutate(City, 
+#               City = fct_lump_n(City, n = 5)) %>% 
+#   step_normalize(all_predictors(),
+#                 -all_nominal(),
+#                 -all_outcomes()) %>% 
+#   step_dummy(all_nominal(),
+#              -all_outcomes()) 
+# 
+# 
+# fl_recipe %>% 
+#   prep() %>% #applied to training data by default since that's in the recipe
+#   juice() 
+# 
+# 
+# #setting up lasso for north carolina
+# fl_lasso_mod <- 
+#   logistic_reg(mixture = 1) %>% 
+#   set_engine("glmnet") %>% 
+#   set_args(penalty = tune()) %>% 
+#   set_mode("classification")
+# 
+# fl_lasso_wf <- 
+#   workflow() %>% 
+#   add_recipe(fl_recipe) %>% 
+#   add_model(fl_lasso_mod)
+# 
+# fl_lasso_wf
+# 
+# tx_cv <- vfold_cv(tx_training, v = 3)
+# penalty_grid <- grid_regular(penalty(),
+#                              levels = 10)
+# penalty_grid 
+# 
+# fl_lasso_tune <- 
+#   fl_lasso_wf %>% 
+#   tune_grid(
+#     resamples = tx_cv,
+#     grid = penalty_grid
+#     )
+# 
+# fl_lasso_tune
+# 
+# fl_lasso_tune %>%
+#     collect_metrics()
+# 
+# best_param_fl <- fl_lasso_tune %>% 
+#   select_best(metric = "accuracy")
+# best_param_fl
+# 
+# fl_final_lasso <- fl_lasso_wf %>% 
+#   finalize_workflow(best_param_fl) %>% 
+#   fit(data = fl_training)
+# 
+# fl_final_lasso %>% 
+#   pull_workflow_fit() %>% 
+#   tidy()
+# 
+# fl_final_lasso %>% 
+#   pull_workflow_fit() %>% 
+#   vip()
 ```
 
-```{r}
-#florida 
-
-fl_mod <- fl %>% 
-  mutate(Status = as.factor(Status)) %>% 
-  mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(State, Severity)) %>%
-  # select(-arrival_date_year,
-  #        -reservation_status,
-  #        -reservation_status_date) %>% 
-  add_n_miss() %>% 
-  filter(n_miss_all == 0) %>% 
-  select(-n_miss_all)
-
-fl_mod
-
- fl_mod$Crossing <- as.factor(fl_mod$Crossing)
- fl_mod$Junction <- as.factor(fl_mod$Junction)
- fl_mod$Traffic_Signal <- as.factor(fl_mod$Traffic_Signal)
-
-set.seed(327) #for reproducibility
-
-# Randomly assigns 75% of the data to training.
-fl_split <- initial_split(fl_mod, 
-                             prop = .50)
-fl_split
-
-fl_training <- training(fl_split)
-fl_testing <- testing(fl_split)
-
-#creating recipe
-fl_recipe <- recipe(Status ~ .,
-                       data = fl_training) %>% 
-  step_mutate(County, 
-              County = fct_lump_n(County, n = 5)) %>% 
-  step_mutate(City, 
-              City = fct_lump_n(City, n = 5)) %>% 
-  step_normalize(all_predictors(),
-                -all_nominal(),
-                -all_outcomes()) %>% 
-  step_dummy(all_nominal(),
-             -all_outcomes()) 
-
-
-fl_recipe %>% 
-  prep() %>% #applied to training data by default since that's in the recipe
-  juice() 
-
-
-#setting up lasso for north carolina
-fl_lasso_mod <- 
-  logistic_reg(mixture = 1) %>% 
-  set_engine("glmnet") %>% 
-  set_args(penalty = tune()) %>% 
-  set_mode("classification")
-
-fl_lasso_wf <- 
-  workflow() %>% 
-  add_recipe(fl_recipe) %>% 
-  add_model(fl_lasso_mod)
-
-fl_lasso_wf
-
-tx_cv <- vfold_cv(tx_training, v = 3)
-penalty_grid <- grid_regular(penalty(),
-                             levels = 10)
-penalty_grid 
-
-fl_lasso_tune <- 
-  fl_lasso_wf %>% 
-  tune_grid(
-    resamples = tx_cv,
-    grid = penalty_grid
-    )
-
-fl_lasso_tune
-
-fl_lasso_tune %>%
-    collect_metrics()
-
-best_param_fl <- fl_lasso_tune %>% 
-  select_best(metric = "accuracy")
-best_param_fl
-
-fl_final_lasso <- fl_lasso_wf %>% 
-  finalize_workflow(best_param_fl) %>% 
-  fit(data = fl_training)
-
-fl_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  tidy()
-
-fl_final_lasso %>% 
-  pull_workflow_fit() %>% 
-  vip()
-```
-
-
-```{r}
-
-```
 
 ```{r}
 #modeling pre-process for traffic_final
