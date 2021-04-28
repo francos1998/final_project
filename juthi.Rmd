@@ -131,7 +131,7 @@ traffic <- traffic %>%
 
 ```{r}
 traffic_time <- traffic %>%
-  mutate(Duration = (End_Time - Start_Time)) %>%
+  mutate(Duration = as.numeric(End_Time - Start_Time)) %>%
   # accident duration should be positive
   filter(!(Duration < 0)) %>%
   separate(Start_Time, into = c("Date", "Time"), sep = " ") %>%
