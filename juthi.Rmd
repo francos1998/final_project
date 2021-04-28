@@ -22,11 +22,8 @@ theme_set(theme_minimal()) # my favorite ggplot2 theme :)
 
 
 
-library(tidyverse)         # for graphing and data cleaning
-library(tidymodels)        # for modeling
 library(themis)            # for step functions for unbalanced data
 library(stacks)            # for stacking models
-library(naniar)            # for examining missing values (NAs)
 library(lubridate)         # for date manipulation
 library(moderndive)        # for King County housing data
 library(vip)               # for variable importance plots
@@ -36,9 +33,7 @@ library(patchwork)         # for combining plots nicely
 theme_set(theme_minimal()) # Lisa's favorite theme
 
 
-library(tidyverse)
 library(scales)
-library(lubridate)
 library(plotly)
 library(gridExtra)
 library(tidytext)
@@ -174,6 +169,11 @@ traffic_final %>%
   group_by(Weather_Condition) %>%
   summarize(Count=n()) %>%
   arrange(desc(Count))
+```
+
+
+```{r, eval = FALSE}
+write_csv(x = traffic_final, "/Users/francosalinas/Desktop/ADV_DATA/final_project/traffic_final.csv")
 ```
 
 
@@ -959,7 +959,7 @@ lending_blend
 autoplot(lending_blend)
 ```
 
-```
+
 
 
 
