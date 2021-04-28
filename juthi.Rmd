@@ -135,9 +135,11 @@ traffic_time <- traffic %>%
   # accident duration should be positive
   filter(!(Duration < 0)) %>%
   separate(Start_Time, into = c("Date", "Time"), sep = " ") %>%
-  mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10),
-         "Wday" = as.character(wday(Date))) %>%
-  mutate("Hour" = str_sub(Time,1,2)) %>%
+  mutate("Year" = as.numeric(str_sub(Date, 1, 4)),
+         "Month" = as.numeric(str_sub(Date, 6, 7)),
+         "Day" = as.numeric(str_sub(Date, 9, 10)),
+         "Wday" = as.numeric(wday(Date))) %>%
+  mutate("Hour" = as.numeric(str_sub(Time,1,2))) %>%
   mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
                            levels = c("Not Severe", "Severe"))) %>% 
   select(-c("Date", "Time", "End_Time")) %>%
@@ -169,6 +171,12 @@ traffic_final %>%
   group_by(Weather_Condition) %>%
   summarize(Count=n()) %>%
   arrange(desc(Count))
+```
+
+
+```{r}
+traffic_final %>% 
+  count(Status)
 ```
 
 
