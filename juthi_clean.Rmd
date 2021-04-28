@@ -371,13 +371,13 @@ traffic_blend <-
 traffic_blend
 ```
 
-```{r}
-autoplot(lending_blend)
-```
 
 
 ```{r}
+traffic_final_stack <- traffic_blend %>%
+  fit_members()
 
+saveRDS(traffic_final_stack, "traffic_final_stack.rds")
 ```
 
 
