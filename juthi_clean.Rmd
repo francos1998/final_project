@@ -357,7 +357,7 @@ tree_fit %>%
 
 
 ```{r}
-lending_stack <-
+traffic_stack <-
   stacks() %>%
   add_candidates(lasso_tune) %>%
   add_candidates(rf_tune) %>%
@@ -365,10 +365,10 @@ lending_stack <-
 ```
 
 ```{r}
-lending_blend <-
-  lending_stack %>% 
+traffic_blend <-
+  traffic_stack %>% 
   blend_predictions()
-lending_blend
+traffic_blend
 ```
 
 ```{r}
@@ -376,6 +376,9 @@ autoplot(lending_blend)
 ```
 
 
+```{r}
+
+```
 
 
 
