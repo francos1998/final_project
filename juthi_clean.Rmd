@@ -316,32 +316,6 @@ tree_fit <- tree_workflow %>%
 collect_metrics(tree_fit)
 ```
 
-```{r}
-set.seed(494)
-
-knn_mod <-
-  nearest_neighbor(
-    neighbors = tune("k")
-  ) %>%
-  set_engine("kknn") %>%
-  set_mode("classification")
-
-# create the workflow
-knn_wf <-
-  workflow() %>%
-  add_model(knn_mod) %>%
-  add_recipe(rf_recipe)
-
-#tune it using 4 tuning parameters
-knn_tune <-
-  knn_wf %>%
-  tune_grid(
-    traffic_cv,
-    grid = 4,
-    control = ctrl_grid
-  )
-```
-
 
 # model stacking 
 ```{r}

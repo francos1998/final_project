@@ -39,7 +39,7 @@ library(randomForest)
 
 
 # read_csv("/Users/francosalinas/Desktop/ADV_DATA/final_project/small_accidents.csv")
-read_csv("/Users/francosalinas/Desktop/ADV_DATA/final_project/traffic_final.csv")
+traffic_final <- read_csv("traffic_final.csv")
 
 
 ##ADD PREPROCESSING IF NECESSARY
@@ -159,34 +159,35 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                             min = min(traffic_final$`Precipitation(in)`),
                             max = max(traffic_final$`Precipitation(in)`),
                             value = c(min(traffic_final$`Precipitation(in)`)),
-                            sep = ""),
-                selectInput(inputId = "Crossing",
-                            label = "Is there a crossing where the accident happened?",
-                            choices = list(Yes = "TRUE",
-                                           No = "FALSE")),
-                selectInput(inputId = "Junction",
-                            label = "Is there a junction where the accident happened?",
-                            choices = list(Yes = "TRUE",
-                                           No = "FALSE")),
-                selectInput(inputId = "Traffic_Signal",
-                            label = "Is there a traffic signal where the accident happened?",
-                            choices = list(Yes = "TRUE",
-                                           No = "FALSE")),
-                selectInput(inputId = "Sunrise_Sunset",
-                            label = "Is it night or day?",
-                            choices = list(Yes = "Night",
-                                           No = "Day")),
-                selectInput(inputId = "Civil_Twilight",
-                            label = "Is there enough natural light to be day?",
-                            choices = list(Yes = "Day",
-                                           No = "Night")),
-                selectInput(inputId = "Nautical_Twilight",
-                            label = "Is it nautical day or night?",
-                            choices = list("Day","Night")),
-                selectInput(inputId = "Astronomical_Twilight",
-                            label = "Was the ski illuminated by the sun?",
-                            choices = list(Yes = "Day",
-                                           No = "Night"))
+                            sep = "")
+                # ,
+                # selectInput(inputId = "Crossing",
+                #             label = "Is there a crossing where the accident happened?",
+                #             choices = list(Yes = "TRUE",
+                #                            No = "FALSE")),
+                # selectInput(inputId = "Junction",
+                #             label = "Is there a junction where the accident happened?",
+                #             choices = list(Yes = "TRUE",
+                #                            No = "FALSE")),
+                # selectInput(inputId = "Traffic_Signal",
+                #             label = "Is there a traffic signal where the accident happened?",
+                #             choices = list(Yes = "TRUE",
+                #                            No = "FALSE")),
+                # selectInput(inputId = "Sunrise_Sunset",
+                #             label = "Is it night or day?",
+                #             choices = list(Yes = "Night",
+                #                            No = "Day")),
+                # selectInput(inputId = "Civil_Twilight",
+                #             label = "Is there enough natural light to be day?",
+                #             choices = list(Yes = "Day",
+                #                            No = "Night")),
+                # selectInput(inputId = "Nautical_Twilight",
+                #             label = "Is it nautical day or night?",
+                #             choices = list("Day","Night")),
+                # selectInput(inputId = "Astronomical_Twilight",
+                #             label = "Was the ski illuminated by the sun?",
+                #             choices = list(Yes = "Day",
+                #                            No = "Night"))
                 
                 
                 # sliderInput(inputId = "Weather_Condition",
@@ -211,5 +212,6 @@ shinyApp(ui = ui, server = server)
 
 
 
-
-
+##Classification or probability:
+  ##Probability that it is classified as severe. 
+  ##Variable importance: having one or two of those local graphs. 
