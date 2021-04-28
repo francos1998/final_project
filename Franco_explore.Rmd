@@ -7,6 +7,7 @@ output: html_document
 library(tidyverse)
 library(lubridate)
 library(dbplyr)
+library(dplyr)
 library(data.table)
 library(scales)
 library(plotly)
@@ -17,11 +18,13 @@ library(glmnet)
 library(rpart)
 library(rpart.plot)
 library(randomForest)
+library(naniar)
+library(tidyr)
 ```
 
 
 ```{r}
-accidents<-fread('small_accidents.csv',data.table=FALSE)
+accidents<-read_csv('small_accidents.csv', na = c(""," ","NA"))
 ```
 
 
@@ -179,10 +182,42 @@ accidents %>%
 
 
 ```{r}
-small_accidents %>% 
+accidents %>% 
   separate(Start_Time, into = c("Date", "Time"), sep = " ") %>%
-  mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10)) %>%   mutate("Hour" = str_sub(Time,1,2)) 
+  mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10),
+         "Wday" = as.character(wday(Date))) %>%
+  mutate("Hour" = str_sub(Time,1,2)) %>%
+  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
+                           levels = c("Not Severe", "Severe")))
+  
+ 
+  
+
+
+weather_to_drop <- 
+  accidents %>% 
+    count(Weather_Condition) %>% 
+    filter(n < 20) %>% 
+    select(Weather_Condition)
+
+weather_to_drop <- 
+drop_weather$Weather_Condition %>% 
+  unlist()
+
+accidents <- accidents %>% 
+  filter(!(Weather_Condition %in% weather_to_drop)) %>% 
+  mutate(Weather_Condition = factor(Weather_Condition)) 
+
+
+  
+ 
+
+
+
+
 ```
+
+>
 
 
 >proportion of missing latituted and report to help explain why you are choosing to leave them out. 
