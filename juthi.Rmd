@@ -181,7 +181,7 @@ traffic_final %>%
 
 
 ```{r, eval = FALSE}
-write_csv(x = traffic_final, "/Users/francosalinas/Desktop/ADV_DATA/final_project/traffic_final.csv")
+#write_csv(x = traffic_final, "/Users/francosalinas/Desktop/ADV_DATA/final_project/traffic_final.csv")
 ```
 
 
@@ -462,7 +462,7 @@ ca_final_lasso %>%
 tx_mod <- tx %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(Start_Time, End_Time, State, Severity)) %>%
+  select(-c(State, Severity)) %>%
   # select(-arrival_date_year,
   #        -reservation_status,
   #        -reservation_status_date) %>% 
@@ -559,7 +559,7 @@ tx_final_lasso %>%
 fl_mod <- fl %>% 
   mutate(Status = as.factor(Status)) %>% 
   mutate(across(where(is.character), as.factor)) %>% 
-  select(-c(Start_Time, End_Time, State, Severity)) %>%
+  select(-c(State, Severity)) %>%
   # select(-arrival_date_year,
   #        -reservation_status,
   #        -reservation_status_date) %>% 
@@ -909,29 +909,29 @@ collect_metrics(tree_fit)
 ```
 
 ```{r}
-# set.seed(494)
-# 
-# knn_mod <-
-#   nearest_neighbor(
-#     neighbors = tune("k")
-#   ) %>%
-#   set_engine("kknn") %>% 
-#   set_mode("classification")
-# 
-# # create the workflow
-# knn_wf <- 
-#   workflow() %>% 
-#   add_model(knn_mod) %>%
-#   add_recipe(rf_recipe)
-# 
-# # tune it using 4 tuning parameters
-# knn_tune <- 
-#   knn_wf %>% 
-#   tune_grid(
-#     traffic_cv,
-#     grid = 4,
-#     control = ctrl_grid
-#   )
+set.seed(494)
+
+knn_mod <-
+  nearest_neighbor(
+    neighbors = tune("k")
+  ) %>%
+  set_engine("kknn") %>%
+  set_mode("classification")
+
+# create the workflow
+knn_wf <-
+  workflow() %>%
+  add_model(knn_mod) %>%
+  add_recipe(rf_recipe)
+
+# tune it using 4 tuning parameters
+knn_tune <-
+  knn_wf %>%
+  tune_grid(
+    traffic_cv,
+    grid = 4,
+    control = ctrl_grid
+  )
 ```
 
 
