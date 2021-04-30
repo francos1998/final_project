@@ -144,6 +144,8 @@ traffic_final %>%
   group_by(Weather_Condition) %>%
   summarize(Count=n()) %>%
   arrange(desc(Count))
+
+write.csv(traffic_final, "traffic_final.csv")
 ```
 
 ```{r}
