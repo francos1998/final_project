@@ -145,8 +145,13 @@ traffic_final %>%
   summarize(Count=n()) %>%
   arrange(desc(Count))
 
-write.csv(traffic_final, "traffic_final.csv")
+write.csv(traffic_final, "traffic_final.csv", row.names = FALSE)
 ```
+
+```{r}
+read_csv("traffic_final.csv")
+```
+
 
 ```{r}
 #modeling pre-process for traffic_final
