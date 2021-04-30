@@ -43,6 +43,35 @@ traffic_final <- read_csv("traffic_final.csv")
 traffic_mod <- readRDS("traffic_final_stack.rds")
 
 ##ADD PREPROCESSING IF NECESSARY
+City <- 
+  traffic_mod$train  %>% 
+  select(City) %>% 
+  distinct(City) %>% 
+  arrange(City) %>% 
+  pull(City)
+
+# Fix employment length
+
+Weather_Condition <- 
+  traffic_mod$train %>% 
+  select(Weather_Condition) %>% 
+  distinct() %>% 
+  arrange(Weather_Condition) %>% 
+  pull(Weather_Condition)
+
+
+# Find min's, max's, and median's for quantitative vars:
+
+stats_num <-
+  traffic_mod$train  %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  group_by(variable) %>% 
+  summarize(min_val = min(value),
+            max_val = max(value),
+            med_val = median(value))
 
 ### Add model
   
@@ -51,9 +80,6 @@ library(shiny)
 ui <- fluidPage(selectInput(inputId = "TMC",
                             label = "TMC code",
                             choices = list(201,202,203,206,222,229,236,241,244,245,246,247,248,336,339,341,343,406)),
-                selectInput(inputId = "Severity",
-                            label = "Accident's Severity",
-                            choices = list(1,2,3,4)),
                 sliderInput(inputId = "Year",
                             label = "Year of Accident",
                             min = min(traffic_final$Year),
@@ -198,7 +224,6 @@ ui <- fluidPage(selectInput(inputId = "TMC",
 server = function (input,output) {
   data <- reactive({
     data.frame(TMC=input$TMC,
-               Severity=input$Severity,
                Year=input$Year,
                Month=input$Month,
                Day=input$Day,
