@@ -257,6 +257,25 @@ final_lasso %>%
   vip()
 ```
 
+
+
+```{r}
+lasso_tune %>% 
+  collect_metrics() %>% 
+  filter(.metric == "accuracy") %>% 
+  ggplot(aes(x = penalty, y = mean)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10",scales::math_format(10^.x))) +
+  labs(x = "penalty", y = "accuracy") +
+  theme_minimal()
+```
+
+
+
+
 ```{r}
 #classification rf 
 set.seed(494)
@@ -303,7 +322,7 @@ rf_tune <-
   tune_grid(
     resamples = traffic_cv,
     grid = rf_penalty_grid,
-    control = ctrl_grid
+    control = control_stack_grid()
   )
 
 rf_tune %>%
@@ -324,13 +343,15 @@ tree_model <-
 
 tree_workflow <-
   workflow() %>% 
-  add_recipe(rf_recipe) %>% 
+  add_recipe(rf_recipe) %>%  
   add_model(tree_model)
 
-tree_fit <- tree_workflow %>% 
+tree_fit <- 
+  tree_workflow %>% 
   fit_resamples(traffic_cv, 
                 # metrics = metric,
-                control = ctrl_grid)
+                control = control_stack_resamples()
+  )
 
 collect_metrics(tree_fit)
 ```
@@ -370,7 +391,7 @@ traffic_blend
 traffic_final_stack <- traffic_blend %>%
   fit_members()
 
-saveRDS(traffic_final_stack, "traffic_final_stack.rds")
+#saveRDS(traffic_final_stack, "traffic_final_stacked.rds")
 ```
 
 
