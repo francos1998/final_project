@@ -238,6 +238,23 @@ lasso_tune <-
 
 lasso_tune %>%
   collect_metrics()
+
+
+best_param <- lasso_tune %>%
+  select_best(metric = "accuracy")
+best_param
+
+final_lasso <- lasso_wf %>%
+  finalize_workflow(best_param) %>%
+  fit(data = traffic_training)
+
+final_lasso %>%
+  pull_workflow_fit() %>%
+  tidy()
+
+final_lasso %>%
+  pull_workflow_fit() %>%
+  vip()
 ```
 
 ```{r}
