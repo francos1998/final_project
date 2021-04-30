@@ -40,38 +40,73 @@ library(randomForest)
 
 # read_csv("/Users/francosalinas/Desktop/ADV_DATA/final_project/small_accidents.csv")
 traffic_final <- read_csv("traffic_final.csv")
-traffic_mod <- readRDS("traffic_final_stack.rds")
+traffic_mod <- readRDS("traffic_final_stacked.rds")
 
 ##ADD PREPROCESSING IF NECESSARY
 
+Cities <- 
+  traffic_mod$train  %>% 
+  select(City) %>% 
+  distinct(City) %>% 
+  arrange(City) %>% 
+  pull(City)
+
+Weather <- 
+  traffic_mod$train  %>% 
+  select(Weather_Condition) %>% 
+  distinct(Weather_Condition) %>% 
+  arrange(Weather_Condition) %>% 
+  pull(Weather_Condition)
+
+
+# Find min's, max's, and median's for quantitative vars:
+
+stats_num <-
+  traffic_mod$train  %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  group_by(variable) %>% 
+  summarize(min_val = min(value),
+            max_val = max(value),
+            med_val = median(value))
+
+
 ### Add model
-  
+## git reset HEAD~1 (if we commit something and can't push it)
+
 library(shiny)
 
 ui <- fluidPage(selectInput(inputId = "TMC",
                             label = "TMC code",
                             choices = list(201,202,203,206,222,229,236,241,244,245,246,247,248,336,339,341,343,406)),
-                selectInput(inputId = "Severity",
-                            label = "Accident's Severity",
-                            choices = list(1,2,3,4)),
                 sliderInput(inputId = "Year",
                             label = "Year of Accident",
-                            min = min(traffic_final$Year),
-                            max = max(traffic_final$Year),
-                            value = c(min(traffic_final$Year)),
-                            sep = ""),
-                sliderInput(inputId = "Month",
-                            label = "Month of Accident",
-                            min = min(traffic_final$Month),
-                            max = max(traffic_final$Month),
-                            value = c(min(traffic_final$Month)),
-                            sep = ""),
+                            min = stats_num %>% 
+                              filter(variable =="Year") %>% 
+                              pull(min_val),
+                            max = stats_num %>% 
+                              filter(variable =="Year") %>% 
+                              pull(max_val),
+                            value = stats_num %>% 
+                              filter(variable =="Year") %>% 
+                              pull(med_val), 
+                            step = 1, 
+                            round = TRUE),
                 sliderInput(inputId = "Day",
                             label = "Day of Accident",
-                            min = min(traffic_final$Day),
-                            max = max(traffic_final$Day),
-                            value = c(min(traffic_final$Day)),
-                            sep = ""),
+                            min = stats_num %>% 
+                              filter(variable =="Day") %>% 
+                              pull(min_val),
+                            max = stats_num %>% 
+                              filter(variable =="Day") %>% 
+                              pull(max_val),
+                            value = stats_num %>% 
+                              filter(variable =="Day") %>% 
+                              pull(med_val), 
+                            step = 1, 
+                            round = TRUE),
                 sliderInput(inputId = "Hour",
                             label = "Hour of Accident",
                             min = min(traffic_final$Hour),
@@ -85,10 +120,10 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                             value = c(min(traffic_final$Wday)),
                             sep = ""),
                 sliderInput(inputId = "Duration",
-                            label = "Duration of Accident",
+                            label = "Duration of Accident in seconds",
                             min = min(traffic_final$Duration),
                             max = max(traffic_final$Duration),
-                            value = c(min(traffic_final$Duration)),
+                            value = c(min(traffic_final$Duration)), ##make a histogram and find a reasonable cutoff
                             sep = ""),
                 sliderInput(inputId = "Start_Lat",
                             label = "Starting latitude of the Accident",
@@ -157,7 +192,7 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                 selectInput(inputId = "Crossing",
                             label = "Is there a crossing where the accident happened?",
                             choices = list(Yes = "TRUE",
-                                          No = "FALSE")),
+                                           No = "FALSE")),
                 selectInput(inputId = "Junction",
                             label = "Is there a junction where the accident happened?",
                             choices = list(Yes = "TRUE",
@@ -180,18 +215,17 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                 selectInput(inputId = "Astronomical_Twilight",
                             label = "Was the ski illuminated by the sun?",
                             choices = list(Yes = "Day",
-                                           No = "Night")),
-                sliderInput(inputId = "Weather_Condition",
-                            label = "Weather condition when accident happened",
-                            min = min(traffic_final$`Precipitation(in)`),
-                            max = max(traffic_final$`Precipitation(in)`),
-                            value = c(min(traffic_final$`Precipitation(in)`)),
-                            sep = ""),
-                selectInput(inputId = "City",
-                            label = "City where the accident happened",
-                            choices = City),
-###Check how to use the model to not have to type all the names out. 
-                mainPanel(textOutput("Pred")))
+                                           No = "Night"))
+                #                 ,
+                #                 sliderInput(inputId = "Weather_Condition",
+                #                             label = "Weather condition when accident happened",
+                #                             choices = Weather),
+                #                 selectInput(inputId = "City",
+                #                             label = "City where the accident happened",
+                #                             choices = Cities),
+                # ###Check how to use the model to not have to type all the names out. 
+                #                 mainPanel(textOutput("Pred"))
+)
 
 
 
@@ -225,7 +259,7 @@ server = function (input,output) {
                Astronomical_Twilight=input$Astronomical_Twilight,
                Weather_Condition=input$Weather_Condition,
                City=input$City
-               )
+    )
   })
   
   pred <- reactive({
@@ -234,11 +268,11 @@ server = function (input,output) {
   
   output$Pred <- renderPrint(pred())
 }
-  
+
 shinyApp(ui = ui, server = server)
 
 
 
 ##Classification or probability:
-  ##Probability that it is classified as severe. 
-  ##Variable importance: having one or two of those local graphs. 
+##Probability that it is classified as severe. 
+##Variable importance: having one or two of those local graphs. 
