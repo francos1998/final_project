@@ -40,7 +40,7 @@ library(randomForest)
 
 # read_csv("/Users/francosalinas/Desktop/ADV_DATA/final_project/small_accidents.csv")
 traffic_final <- read_csv("traffic_final.csv")
-
+traffic_mod <- readRDS("traffic_final_stack.rds")
 
 ##ADD PREPROCESSING IF NECESSARY
 
@@ -108,12 +108,6 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                             max = max(traffic_final$Distance),
                             value = c(min(traffic_final$Distance)),
                             sep = ""),
-                sliderInput(inputId = "Distance",
-                            label = "Distance of the Accident",
-                            min = min(traffic_final$Distance),
-                            max = max(traffic_final$Distance),
-                            value = c(min(traffic_final$Distance)),
-                            sep = ""),
                 selectInput(inputId = "Side",
                             label = "Side of the street where the accident happened",
                             choices = list(Right = "R",
@@ -159,55 +153,88 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                             min = min(traffic_final$`Precipitation(in)`),
                             max = max(traffic_final$`Precipitation(in)`),
                             value = c(min(traffic_final$`Precipitation(in)`)),
-                            sep = "")
-                # ,
-                # selectInput(inputId = "Crossing",
-                #             label = "Is there a crossing where the accident happened?",
-                #             choices = list(Yes = "TRUE",
-                #                            No = "FALSE")),
-                # selectInput(inputId = "Junction",
-                #             label = "Is there a junction where the accident happened?",
-                #             choices = list(Yes = "TRUE",
-                #                            No = "FALSE")),
-                # selectInput(inputId = "Traffic_Signal",
-                #             label = "Is there a traffic signal where the accident happened?",
-                #             choices = list(Yes = "TRUE",
-                #                            No = "FALSE")),
-                # selectInput(inputId = "Sunrise_Sunset",
-                #             label = "Is it night or day?",
-                #             choices = list(Yes = "Night",
-                #                            No = "Day")),
-                # selectInput(inputId = "Civil_Twilight",
-                #             label = "Is there enough natural light to be day?",
-                #             choices = list(Yes = "Day",
-                #                            No = "Night")),
-                # selectInput(inputId = "Nautical_Twilight",
-                #             label = "Is it nautical day or night?",
-                #             choices = list("Day","Night")),
-                # selectInput(inputId = "Astronomical_Twilight",
-                #             label = "Was the ski illuminated by the sun?",
-                #             choices = list(Yes = "Day",
-                #                            No = "Night"))
-                
-                
-                # sliderInput(inputId = "Weather_Condition",
-                #             label = "Weather condition when accident happened",
-                #             min = min(traffic_final$`Precipitation(in)`),
-                #             max = max(traffic_final$`Precipitation(in)`),
-                #             value = c(min(traffic_final$`Precipitation(in)`)),
-                #             sep = "")
-                # 
-                # 
-                # selectInput(inputId = "City",
-                #             label = "City where the accident happened",
-                #             choices = City)
+                            sep = ""),
+                selectInput(inputId = "Crossing",
+                            label = "Is there a crossing where the accident happened?",
+                            choices = list(Yes = "TRUE",
+                                          No = "FALSE")),
+                selectInput(inputId = "Junction",
+                            label = "Is there a junction where the accident happened?",
+                            choices = list(Yes = "TRUE",
+                                           No = "FALSE")),
+                selectInput(inputId = "Traffic_Signal",
+                            label = "Is there a traffic signal where the accident happened?",
+                            choices = list(Yes = "TRUE",
+                                           No = "FALSE")),
+                selectInput(inputId = "Sunrise_Sunset",
+                            label = "Is it night or day?",
+                            choices = list(Yes = "Night",
+                                           No = "Day")),
+                selectInput(inputId = "Civil_Twilight",
+                            label = "Is there enough natural light to be day?",
+                            choices = list(Yes = "Day",
+                                           No = "Night")),
+                selectInput(inputId = "Nautical_Twilight",
+                            label = "Is it nautical day or night?",
+                            choices = list("Day","Night")),
+                selectInput(inputId = "Astronomical_Twilight",
+                            label = "Was the ski illuminated by the sun?",
+                            choices = list(Yes = "Day",
+                                           No = "Night")),
+                sliderInput(inputId = "Weather_Condition",
+                            label = "Weather condition when accident happened",
+                            min = min(traffic_final$`Precipitation(in)`),
+                            max = max(traffic_final$`Precipitation(in)`),
+                            value = c(min(traffic_final$`Precipitation(in)`)),
+                            sep = ""),
+                selectInput(inputId = "City",
+                            label = "City where the accident happened",
+                            choices = City),
 ###Check how to use the model to not have to type all the names out. 
-                
-
-)
+                mainPanel(textOutput("Pred")))
 
 
-server <- function(input, output) {}
+
+server = function (input,output) {
+  data <- reactive({
+    data.frame(TMC=input$TMC,
+               Severity=input$Severity,
+               Year=input$Year,
+               Month=input$Month,
+               Day=input$Day,
+               Hour=input$Hour,
+               Wday=input$Wday,
+               Duration=input$Duration,
+               Start_Lat=input$Start_Lat,
+               Start_Lng=input$Start_Lng,
+               Distance=input$Distance,
+               Side=input$Side,
+               Temperature=input$Temperature,
+               `Wind_Chill(F)`=input$`Wind_Chill(F)`,
+               Humidity=input$Humidity,
+               Pressure=input$Pressure,
+               Visibility=input$Visibility,
+               Wind_Speed=input$Wind_Speed,
+               `Precipitation(in)`=input$`Precipitation(in)`,
+               Crossing=input$Crossing,
+               Junction=input$Junction,
+               Traffic_Signal=input$Traffic_Signal,
+               Sunrise_Sunset=input$Sunrise_Sunset,
+               Civil_Twilight=input$Civil_Twilight,
+               Nautical_Twilight=input$Nautical_Twilight,
+               Astronomical_Twilight=input$Astronomical_Twilight,
+               Weather_Condition=input$Weather_Condition,
+               City=input$City
+               )
+  })
+  
+  pred <- reactive({
+    predict(traffic_mod,data())
+  })
+  
+  output$Pred <- renderPrint(pred())
+}
+  
 shinyApp(ui = ui, server = server)
 
 
