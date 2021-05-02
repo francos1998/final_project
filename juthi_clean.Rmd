@@ -85,8 +85,76 @@ not_useful <- c("ID", "Source", "Timezone", "Airport_Code", "Weather_Timestamp",
 traffic <- 
   cars %>% 
   select(-all_of(drop_na_cols), -all_of(not_useful))
+```
+
+```{r}
+p1 <- ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) + 
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6)) 
+  
+p2 <-  ggplot(cars, aes(Turning_Loop, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+p3 <- ggplot(cars, aes(Country, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+p4 <- ggplot(cars, aes(Amenity, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+ggplot(cars, aes(Stop, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+ggplot(cars, aes(Station, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+ggplot(cars, aes(Roundabout, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+ggplot(cars, aes(Railway, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+ggplot(cars, aes(No_Exit, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+ggplot(cars, aes(Give_Way, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+ggplot(cars, aes(Traffic_Calming, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
 
 
+ggplot(cars, aes(Bump, ..prop.., group = Severity)) +
+  geom_bar(aes(fill = Severity), position = "dodge") +
+  scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+
+
+grid.arrange(p1, p2, nrow = 1)
+```
+
+
+```{r}
 traffic <-  traffic %>%
   rename("Distance" = `Distance(mi)`, "Temperature" = `Temperature(F)`, "Humidity" = `Humidity(%)`, 
          "Pressure" = `Pressure(in)`, "Visibility" = `Visibility(mi)`, "Wind_Speed" = `Wind_Speed(mph)`)
@@ -103,7 +171,6 @@ traffic <- traffic %>%
   mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
                            levels = c("Not Severe", "Severe")))
 ```
-
 
 ```{r}
 traffic_time <- traffic %>%
