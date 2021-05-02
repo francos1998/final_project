@@ -396,7 +396,7 @@ traffic_blend
 traffic_final_stack <- traffic_blend %>%
   fit_members()
 
-#saveRDS(traffic_final_stack, "traffic_final_stacked.rds")
+saveRDS(traffic_final_stack, "traffic_final_stacked.rds")
 ```
 
 
