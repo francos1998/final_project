@@ -53,6 +53,13 @@ Cities <-
   arrange(City) %>% 
   pull(City)
 
+Counties <- 
+  traffic_mod$train  %>% 
+  select(County) %>% 
+  distinct(County) %>% 
+  arrange(County) %>% 
+  pull(County)
+
 Weather <- 
   traffic_mod$train  %>% 
   select(Weather_Condition) %>% 
@@ -204,19 +211,19 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(med_val), 
                             step = 1, 
                             round = TRUE),
-                sliderInput(inputId = "Wind_Chill(F)",
-                            label = "Wind chill in degrees Farenheit when accident happened",
-                            min = stats_num %>% 
-                              filter(variable =="Wind_Chill(F)") %>% 
-                              pull(min_val),
-                            max = stats_num %>% 
-                              filter(variable =="Wind_Chill(F)") %>% 
-                              pull(max_val),
-                            value = stats_num %>% 
-                              filter(variable =="Wind_Chill(F)") %>% 
-                              pull(med_val), 
-                            step = 1, 
-                            round = TRUE),
+                # sliderInput(inputId = "Wind_Chill(F)",
+                #             label = "Wind chill in degrees Farenheit when accident happened",
+                #             min = stats_num %>% 
+                #               filter(variable =="Wind_Chill(F)") %>% 
+                #               pull(min_val),
+                #             max = stats_num %>% 
+                #               filter(variable =="Wind_Chill(F)") %>% 
+                #               pull(max_val),
+                #             value = stats_num %>% 
+                #               filter(variable =="Wind_Chill(F)") %>% 
+                #               pull(med_val), 
+                #             step = 1, 
+                #             round = TRUE),
                 sliderInput(inputId = "Humidity",
                             label = "Humidity when accident happened",
                             min = stats_num %>% 
@@ -269,19 +276,19 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(med_val), 
                             step = 1, 
                             round = TRUE),
-                sliderInput(inputId = "Precipitation(in)",
-                            label = "Precipitation when accident happened in inches",
-                            min = stats_num %>% 
-                              filter(variable =="Precipitation(in)") %>% 
-                              pull(min_val),
-                            max = stats_num %>% 
-                              filter(variable =="Precipitation(in)") %>% 
-                              pull(max_val),
-                            value = stats_num %>% 
-                              filter(variable =="Precipitation(in)") %>% 
-                              pull(med_val), 
-                            step = 1, 
-                            round = TRUE),
+                # sliderInput(inputId = "Precipitation(in)",
+                #             label = "Precipitation when accident happened in inches",
+                #             min = stats_num %>% 
+                #               filter(variable =="Precipitation(in)") %>% 
+                #               pull(min_val),
+                #             max = stats_num %>% 
+                #               filter(variable =="Precipitation(in)") %>% 
+                #               pull(max_val),
+                #             value = stats_num %>% 
+                #               filter(variable =="Precipitation(in)") %>% 
+                #               pull(med_val), 
+                #             step = 1, 
+                #             round = TRUE),
                 selectInput(inputId = "Crossing",
                             label = "Is there a crossing where the accident happened?",
                             choices = list(Yes = "TRUE",
@@ -315,6 +322,9 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                 selectInput(inputId = "City",
                             label = "City where the accident happened",
                             choices = Cities),
+                selectInput(inputId = "County",
+                            label = "County where the accident happened",
+                            choices = Counties),
                 ###Check how to use the model to not have to type all the names out.
                                 mainPanel(textOutput("Pred"))
 )
@@ -322,44 +332,68 @@ ui <- fluidPage(selectInput(inputId = "TMC",
 
 
 server = function (input,output) {
-  data <- reactive({
-    data.frame(TMC=input$TMC,
-               Severity=input$Severity,
-               Year=input$Year,
-               Month=input$Month,
-               Day=input$Day,
-               Hour=input$Hour,
-               Wday=input$Wday,
-               Duration=input$Duration,
-               Start_Lat=input$Start_Lat,
-               Start_Lng=input$Start_Lng,
-               Distance=input$Distance,
-               Side=input$Side,
-               Temperature=input$Temperature,
-               `Wind_Chill(F)`=input$`Wind_Chill(F)`,
-               Humidity=input$Humidity,
-               Pressure=input$Pressure,
-               Visibility=input$Visibility,
-               Wind_Speed=input$Wind_Speed,
-               `Precipitation(in)`=input$`Precipitation(in)`,
-               Crossing=input$Crossing,
-               Junction=input$Junction,
-               Traffic_Signal=input$Traffic_Signal,
-               Sunrise_Sunset=input$Sunrise_Sunset,
-               Civil_Twilight=input$Civil_Twilight,
-               Nautical_Twilight=input$Nautical_Twilight,
-               Astronomical_Twilight=input$Astronomical_Twilight,
-               Weather_Condition=input$Weather_Condition,
-               City=input$City
-    )
-  })
+  output$Pred <- renderText({
+  data <- data.frame(TMC=201,
+               Month=10, 
+               County = "Wake",
+               Hour= 12,
+               Wday=4,
+               Duration=100,
+               Start_Lat= 38.58390,
+               Start_Lng=-121.4604,
+               Distance=0.01,
+               Side="Right",
+               Temperature= 70,
+               Humidity=82,
+               Pressure=28.91,
+               Visibility=10,
+               Wind_Speed=0,
+               # `Wind_Chill(F)`= 50,
+               # `Precipitation(in)`=10.02,
+               Crossing= "No",
+               Junction="Yes",
+               Traffic_Signal="No",
+               Sunrise_Sunset="Night",
+               Civil_Twilight="Day",
+               Nautical_Twilight="Day",
+               Astronomical_Twilight="Day",
+               Weather_Condition="Cloudy",
+               City="Dallas"
+               
+               # TMC=input$TMC,
+               # Month=input$Month,
+               # Hour=input$Hour,
+               # Wday=input$Wday,
+               # Duration=input$Duration,
+               # Start_Lat=input$Start_Lat,
+               # Start_Lng=input$Start_Lng,
+               # Distance=input$Distance,
+               # Side=input$Side,
+               # Temperature=input$Temperature,
+               # `Wind_Chill(F)`=input$`Wind_Chill(F)`,
+               # Humidity=input$Humidity,
+               # Pressure=input$Pressure,
+               # Visibility=input$Visibility,
+               # Wind_Speed=input$Wind_Speed,
+               # `Precipitation(in)`=input$`Precipitation(in)`,
+               # Crossing=input$Crossing,
+               # Junction=input$Junction,
+               # Traffic_Signal=input$Traffic_Signal,
+               # Sunrise_Sunset=input$Sunrise_Sunset,
+               # Civil_Twilight=input$Civil_Twilight,
+               # Nautical_Twilight=input$Nautical_Twilight,
+               # Astronomical_Twilight=input$Astronomical_Twilight,
+               # Weather_Condition=input$Weather_Condition,
+               # City=input$City
+               )
   
-  pred <- reactive({
-    predict(traffic_mod,data())
-  })
+  pred <- 
+    predict(traffic_mod,data)
   
-  output$Pred <- renderPrint(pred())
+  pred}
+  )
 }
+  
 
 shinyApp(ui = ui, server = server)
 
