@@ -4,3 +4,5 @@ output: html_document
 ---
 
 Could this analysis in any way cause harm? How might it be misinterpreted? Does it build on previous knowledge and expand it?
+
+I think that our analysis could be misinterpreted if people assume that the variables included are the only risk factors that play into predicting the severity of an accident. There are multiple other factors that we consider important and were not included, for example: driving intoxicated, using a cellphone, driving over the limit of speed. Also, it is important to acknowledge that our definition of severity is also not holistic in the sense that we aren't including physical or mental harm in our measure of severity. Therefore, our analysis does not intend to highlight the most relevant factors that play into the causation and definition of a severe accident, but is intended to use available data to provide a close approximation to the truth. 
