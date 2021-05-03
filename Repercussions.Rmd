@@ -1,0 +1,6 @@
+---
+title: "Repercussions"
+output: html_document
+---
+
+Could this analysis in any way cause harm? How might it be misinterpreted? Does it build on previous knowledge and expand it?
