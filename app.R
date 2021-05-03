@@ -211,19 +211,19 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(med_val), 
                             step = 1, 
                             round = TRUE),
-                # sliderInput(inputId = "Wind_Chill(F)",
-                #             label = "Wind chill in degrees Farenheit when accident happened",
-                #             min = stats_num %>% 
-                #               filter(variable =="Wind_Chill(F)") %>% 
-                #               pull(min_val),
-                #             max = stats_num %>% 
-                #               filter(variable =="Wind_Chill(F)") %>% 
-                #               pull(max_val),
-                #             value = stats_num %>% 
-                #               filter(variable =="Wind_Chill(F)") %>% 
-                #               pull(med_val), 
-                #             step = 1, 
-                #             round = TRUE),
+                sliderInput(inputId = "`Wind_Chill(F)`",
+                            label = "Wind chill in degrees Farenheit when accident happened",
+                            min = stats_num %>%
+                              filter(variable =="`Wind_Chill(F)`") %>%
+                              pull(min_val),
+                            max = stats_num %>%
+                              filter(variable =="`Wind_Chill(F)`") %>%
+                              pull(max_val),
+                            value = stats_num %>%
+                              filter(variable =="`Wind_Chill(F)`") %>%
+                              pull(med_val),
+                            step = 1,
+                            round = TRUE),
                 sliderInput(inputId = "Humidity",
                             label = "Humidity when accident happened",
                             min = stats_num %>% 
@@ -276,19 +276,19 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(med_val), 
                             step = 1, 
                             round = TRUE),
-                # sliderInput(inputId = "Precipitation(in)",
-                #             label = "Precipitation when accident happened in inches",
-                #             min = stats_num %>% 
-                #               filter(variable =="Precipitation(in)") %>% 
-                #               pull(min_val),
-                #             max = stats_num %>% 
-                #               filter(variable =="Precipitation(in)") %>% 
-                #               pull(max_val),
-                #             value = stats_num %>% 
-                #               filter(variable =="Precipitation(in)") %>% 
-                #               pull(med_val), 
-                #             step = 1, 
-                #             round = TRUE),
+                sliderInput(inputId = "`Precipitation(in)`",
+                            label = "Precipitation when accident happened in inches",
+                            min = stats_num %>%
+                              filter(variable =="`Precipitation(in)`") %>%
+                              pull(min_val),
+                            max = stats_num %>%
+                              filter(variable =="`Precipitation(in)`") %>%
+                              pull(max_val),
+                            value = stats_num %>%
+                              filter(variable =="`Precipitation(in)`") %>%
+                              pull(med_val),
+                            step = 1,
+                            round = TRUE),
                 selectInput(inputId = "Crossing",
                             label = "Is there a crossing where the accident happened?",
                             choices = list(Yes = "TRUE",
@@ -333,7 +333,7 @@ ui <- fluidPage(selectInput(inputId = "TMC",
 
 server = function (input,output) {
   output$Pred <- renderText({
-  data <- data.frame(TMC=201,
+  data <- tibble(TMC=201,
                Month=10, 
                County = "Wake",
                Hour= 12,
@@ -342,17 +342,17 @@ server = function (input,output) {
                Start_Lat= 38.58390,
                Start_Lng=-121.4604,
                Distance=0.01,
-               Side="Right",
+               Side="R",
                Temperature= 70,
                Humidity=82,
                Pressure=28.91,
                Visibility=10,
                Wind_Speed=0,
-               # `Wind_Chill(F)`= 50,
-               # `Precipitation(in)`=10.02,
-               Crossing= "No",
-               Junction="Yes",
-               Traffic_Signal="No",
+               `Wind_Chill(F)`= 50,
+               `Precipitation(in)`=10.02,
+               Crossing= "TRUE",
+               Junction="FALSE",
+               Traffic_Signal="FALSE",
                Sunrise_Sunset="Night",
                Civil_Twilight="Day",
                Nautical_Twilight="Day",
