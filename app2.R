@@ -204,16 +204,16 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(med_val),
                             step = 1,
                             round = TRUE),
-                sliderInput(inputId = "Wind_Chill(F)",
+                sliderInput(inputId = "Wind_Chill",
                             label = "Wind chill in degrees Farenheit when accident happened",
                             min = stats_num %>%
-                              filter(variable =="Wind_Chill(F)") %>%
+                              filter(variable =="Wind_Chill") %>%
                               pull(min_val),
                             max = stats_num %>%
-                              filter(variable =="Wind_Chill(F)") %>%
+                              filter(variable =="Wind_Chill") %>%
                               pull(max_val),
                             value = stats_num %>%
-                              filter(variable =="Wind_Chill(F)") %>%
+                              filter(variable =="Wind_Chill") %>%
                               pull(med_val),
                             step = 1,
                             round = TRUE),
@@ -269,16 +269,16 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(med_val),
                             step = 1,
                             round = TRUE),
-                sliderInput(inputId = "Precipitation(in)",
+                sliderInput(inputId = "Precipitation",
                             label = "Precipitation when accident happened in inches",
                             min = stats_num %>%
-                              filter(variable =="Precipitation(in)") %>%
+                              filter(variable =="Precipitation") %>%
                               pull(min_val),
                             max = stats_num %>%
-                              filter(variable =="Precipitation(in)") %>%
+                              filter(variable =="Precipitation") %>%
                               pull(max_val),
                             value = stats_num %>%
-                              filter(variable =="Precipitation(in)") %>%
+                              filter(variable =="Precipitation") %>%
                               pull(med_val),
                             step = 1,
                             round = TRUE),
@@ -316,13 +316,12 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                             label = "City where the accident happened",
                             choices = Cities),
                 ###Check how to use the model to not have to type all the names out.
-                mainPanel(textOutput("Pred"))
+                mainPanel(verbatimTextOutput("Pred"))
 )
 
 
-
 server = function (input,output) {
-  output$Pred <- renderText({
+  output$Pred <- renderPrint({
     data <- data.frame(TMC=input$TMC,
                        Severity=input$Severity,
                        # Year=input$Year,
@@ -336,12 +335,12 @@ server = function (input,output) {
                        Distance=input$Distance,
                        Side=input$Side,
                        Temperature=input$Temperature,
-                       `Wind_Chill(F)`=input$`Wind_Chill(F)`,
+                       Wind_Chill=input$Wind_Chill,
                        Humidity=input$Humidity,
                        Pressure=input$Pressure,
                        Visibility=input$Visibility,
                        Wind_Speed=input$Wind_Speed,
-                       `Precipitation(in)`=input$`Precipitation(in)`,
+                       Precipitation=input$Precipitation,
                        Crossing=input$Crossing,
                        Junction=input$Junction,
                        Traffic_Signal=input$Traffic_Signal,

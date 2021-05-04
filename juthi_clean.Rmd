@@ -59,11 +59,11 @@ options(warn = -1)
 cars <- read_csv("small_accidents.csv", col_types = cols(.default = col_character())) %>% 
   type_convert()
 
-weather <-
-  cars %>%
-  group_by(Weather_Condition) %>%
+cars %>%
+  group_by(City) %>%
   summarize(Count=n()) %>%
-  arrange(desc(Count))
+  arrange(desc(Count)) %>%
+  head(1000)
 ```
 
 
@@ -78,7 +78,7 @@ cars %>% summarise_all(~ mean(is.na(.))) %>%
 
 drop_na_cols <- c("End_Lat", "End_Lng", "Number")
 
-not_useful <- c("ID", "Source", "Timezone", "Airport_Code", "Weather_Timestamp","Wind_Direction", "Description", "Bump", "Traffic_Calming", "Give_Way", "No_Exit", "Railway", "Roundabout", "Station", "Stop", "Amenity", "Street", "Zipcode", "Country", "Turning_Loop")
+not_useful <- c("ID", "Source", "Timezone", "Airport_Code", "Weather_Timestamp","Wind_Direction", "Description", "Bump", "Traffic_Calming", "Give_Way", "No_Exit", "Railway", "Roundabout", "Station", "Stop", "Amenity", "Street", "Zipcode", "Country", "Turning_Loop", "County", "TMC")
 
 #eliminated due to near-zero variance, step function can also get rid of them. 
 
@@ -161,7 +161,7 @@ p9+ p10+ p11+ p12
 ```{r}
 traffic <-  traffic %>%
   rename("Distance" = `Distance(mi)`, "Temperature" = `Temperature(F)`, "Humidity" = `Humidity(%)`, 
-         "Pressure" = `Pressure(in)`, "Visibility" = `Visibility(mi)`, "Wind_Speed" = `Wind_Speed(mph)`)
+         "Pressure" = `Pressure(in)`, "Visibility" = `Visibility(mi)`, "Wind_Speed" = `Wind_Speed(mph)`, "Precipitation" = `Precipitation(in)`, "Wind_Chill" = `Wind_Chill(F)`)
 
 traffic$Severity <- as.character(traffic$Severity)
 
@@ -188,7 +188,7 @@ traffic_time <- traffic %>%
   mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
                            levels = c("Not Severe", "Severe"))) %>% 
   select(-c("Date", "Time", "End_Time")) %>%
-  select(TMC, Severity, Year, Month, Day, Hour, Wday, Duration, everything())
+  select(Severity, Year, Month, Day, Hour, Wday, Duration, everything())
 
 ```
 
@@ -209,7 +209,24 @@ traffic_weather <- traffic_time %>%
   filter(!(Weather_Condition %in% weather_to_drop)) %>% 
   mutate(Weather_Condition = factor(Weather_Condition)) 
 
-traffic_final <- traffic_weather
+traffic2 <- traffic_weather
+
+count_city <- traffic2 %>%
+  group_by(City) %>%
+  summarize(Count=n()) %>%
+  arrange(desc(Count)) %>%
+  head(950)  
+
+traffic3 <-
+  traffic2 %>%
+    left_join(count_city, by="City")
+
+traffic_final <- 
+  traffic3 %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all) %>%
+  select(-Count)
 
 write.csv(traffic_final, "traffic_final.csv", row.names = FALSE)
 ```
@@ -261,8 +278,8 @@ set.seed(494)
 lasso_recipe <-
   recipe(Status ~ .,
          data = traffic_training) %>%
-  step_mutate(County,
-               County = fct_lump_n(County, n = 5)) %>%
+  # step_mutate(County,
+  #              County = fct_lump_n(County, n = 5)) %>%
    step_mutate(City,
                City = fct_lump_n(City, n = 5)) %>%
   step_normalize(all_predictors(),
@@ -456,15 +473,10 @@ traffic_blend <-
 traffic_blend
 ```
 
-
-
 ```{r}
 traffic_final_stack <- traffic_blend %>%
   fit_members()
 
 saveRDS(traffic_final_stack, "traffic_final_stacked.rds")
 ```
-
-
-
 

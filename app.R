@@ -53,12 +53,12 @@ Cities <-
   arrange(City) %>% 
   pull(City)
 
-Counties <- 
-  traffic_mod$train  %>% 
-  select(County) %>% 
-  distinct(County) %>% 
-  arrange(County) %>% 
-  pull(County)
+# Counties <- 
+#   traffic_mod$train  %>% 
+#   select(County) %>% 
+#   distinct(County) %>% 
+#   arrange(County) %>% 
+#   pull(County)
 
 Weather <- 
   traffic_mod$train  %>% 
@@ -87,35 +87,36 @@ stats_num <-
 
 library(shiny)
 
-ui <- fluidPage(selectInput(inputId = "TMC",
-                            label = "TMC code",
-                            choices = list(201,202,203,206,222,229,236,241,244,245,246,247,248,336,339,341,343,406)),
-                sliderInput(inputId = "Year",
-                            label = "Year of Accident",
-                            min = stats_num %>% 
-                              filter(variable =="Year") %>% 
-                              pull(min_val),
-                            max = stats_num %>% 
-                              filter(variable =="Year") %>% 
-                              pull(max_val),
-                            value = stats_num %>% 
-                              filter(variable =="Year") %>% 
-                              pull(med_val), 
-                            step = 1, 
-                            round = TRUE),
-                sliderInput(inputId = "Day",
-                            label = "Day of Accident",
-                            min = stats_num %>% 
-                              filter(variable =="Day") %>% 
-                              pull(min_val),
-                            max = stats_num %>% 
-                              filter(variable =="Day") %>% 
-                              pull(max_val),
-                            value = stats_num %>% 
-                              filter(variable =="Day") %>% 
-                              pull(med_val), 
-                            step = 1, 
-                            round = TRUE),
+ui <- fluidPage(
+  # selectInput(inputId = "TMC",
+  #                           label = "TMC code",
+  #                           choices = list(201,202,203,206,222,229,236,241,244,245,246,247,248,336,339,341,343,406)),
+                # sliderInput(inputId = "Year",
+                #             label = "Year of Accident",
+                #             min = stats_num %>% 
+                #               filter(variable =="Year") %>% 
+                #               pull(min_val),
+                #             max = stats_num %>% 
+                #               filter(variable =="Year") %>% 
+                #               pull(max_val),
+                #             value = stats_num %>% 
+                #               filter(variable =="Year") %>% 
+                #               pull(med_val), 
+                #             step = 1, 
+                #             round = TRUE),
+                # sliderInput(inputId = "Day",
+                #             label = "Day of Accident",
+                #             min = stats_num %>% 
+                #               filter(variable =="Day") %>% 
+                #               pull(min_val),
+                #             max = stats_num %>% 
+                #               filter(variable =="Day") %>% 
+                #               pull(max_val),
+                #             value = stats_num %>% 
+                #               filter(variable =="Day") %>% 
+                #               pull(med_val), 
+                #             step = 1, 
+                #             round = TRUE),
                 sliderInput(inputId = "Hour",
                             label = "Hour of Accident",
                             min = stats_num %>% 
@@ -126,6 +127,19 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(max_val),
                             value = stats_num %>% 
                               filter(variable =="Hour") %>% 
+                              pull(med_val), 
+                            step = 1, 
+                            round = TRUE),
+                sliderInput(inputId = "Month",
+                            label = "Month of Accident",
+                            min = stats_num %>% 
+                              filter(variable =="Month") %>% 
+                              pull(min_val),
+                            max = stats_num %>% 
+                              filter(variable =="Month") %>% 
+                              pull(max_val),
+                            value = stats_num %>% 
+                              filter(variable =="Month") %>% 
                               pull(med_val), 
                             step = 1, 
                             round = TRUE),
@@ -211,16 +225,16 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(med_val), 
                             step = 1, 
                             round = TRUE),
-                sliderInput(inputId = "`Wind_Chill(F)`",
+                sliderInput(inputId = "Wind_Chill",
                             label = "Wind chill in degrees Farenheit when accident happened",
                             min = stats_num %>%
-                              filter(variable =="`Wind_Chill(F)`") %>%
+                              filter(variable =="Wind_Chill") %>%
                               pull(min_val),
                             max = stats_num %>%
-                              filter(variable =="`Wind_Chill(F)`") %>%
+                              filter(variable =="Wind_Chill") %>%
                               pull(max_val),
                             value = stats_num %>%
-                              filter(variable =="`Wind_Chill(F)`") %>%
+                              filter(variable =="Wind_Chill") %>%
                               pull(med_val),
                             step = 1,
                             round = TRUE),
@@ -276,16 +290,16 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                               pull(med_val), 
                             step = 1, 
                             round = TRUE),
-                sliderInput(inputId = "`Precipitation(in)`",
+                sliderInput(inputId = "Precipitation",
                             label = "Precipitation when accident happened in inches",
                             min = stats_num %>%
-                              filter(variable =="`Precipitation(in)`") %>%
+                              filter(variable =="Precipitation") %>%
                               pull(min_val),
                             max = stats_num %>%
-                              filter(variable =="`Precipitation(in)`") %>%
+                              filter(variable =="Precipitation") %>%
                               pull(max_val),
                             value = stats_num %>%
-                              filter(variable =="`Precipitation(in)`") %>%
+                              filter(variable =="Precipitation") %>%
                               pull(med_val),
                             step = 1,
                             round = TRUE),
@@ -322,45 +336,46 @@ ui <- fluidPage(selectInput(inputId = "TMC",
                 selectInput(inputId = "City",
                             label = "City where the accident happened",
                             choices = Cities),
-                selectInput(inputId = "County",
-                            label = "County where the accident happened",
-                            choices = Counties),
+                # selectInput(inputId = "County",
+                #             label = "County where the accident happened",
+                #             choices = Counties),
                 ###Check how to use the model to not have to type all the names out.
-                                mainPanel(textOutput("Pred"))
+                                mainPanel(verbatimTextOutput("Pred"))
 )
 
 
 
 server = function (input,output) {
-  output$Pred <- renderText({
-  data <- tibble(TMC=201,
-               Month=10, 
-               County = "Wake",
-               Hour= 12,
-               Wday=4,
-               Duration=100,
-               Start_Lat= 38.58390,
-               Start_Lng=-121.4604,
-               Distance=0.01,
-               Side="R",
-               Temperature= 70,
-               Humidity=82,
-               Pressure=28.91,
-               Visibility=10,
-               Wind_Speed=0,
-               `Wind_Chill(F)`= 50,
-               `Precipitation(in)`=10.02,
-               Crossing= "TRUE",
-               Junction="FALSE",
-               Traffic_Signal="FALSE",
-               Sunrise_Sunset="Night",
-               Civil_Twilight="Day",
-               Nautical_Twilight="Day",
-               Astronomical_Twilight="Day",
-               Weather_Condition="Cloudy",
-               City="Dallas"
-               
-               # TMC=input$TMC,
+  output$Pred <- renderPrint({
+  data <- tibble(  TMC=201,
+                   Month=10,
+                   # County = "Rockwall",
+                   Hour= 12,
+                   Wday=4,
+                   Duration=100,
+                   Start_Lat= 38.58390,
+                   Start_Lng=-121.4604,
+                   Distance=0.01,
+                   Side="R",
+                   Temperature= 70,
+                   Humidity=82,
+                   Pressure=28.91,
+                   Visibility=10,
+                   Wind_Speed=0,
+                   Wind_Chill= 50,
+                   Precipitation=10.02,
+                   Crossing= "TRUE",
+                   Junction="FALSE",
+                   Traffic_Signal="FALSE",
+                   Sunrise_Sunset="Night",
+                   Civil_Twilight="Day",
+                   Nautical_Twilight="Day",
+                   Astronomical_Twilight="Day",
+                   Weather_Condition="Cloudy",
+                   City="Dallas"
+                   )
+  
+                # TMC=input$TMC,
                # Month=input$Month,
                # Hour=input$Hour,
                # Wday=input$Wday,
@@ -370,12 +385,12 @@ server = function (input,output) {
                # Distance=input$Distance,
                # Side=input$Side,
                # Temperature=input$Temperature,
-               # `Wind_Chill(F)`=input$`Wind_Chill(F)`,
+               # Wind_Chill=input$Wind_Chill,
                # Humidity=input$Humidity,
                # Pressure=input$Pressure,
                # Visibility=input$Visibility,
                # Wind_Speed=input$Wind_Speed,
-               # `Precipitation(in)`=input$`Precipitation(in)`,
+               # Precipitation=input$Precipitation,
                # Crossing=input$Crossing,
                # Junction=input$Junction,
                # Traffic_Signal=input$Traffic_Signal,
@@ -385,7 +400,7 @@ server = function (input,output) {
                # Astronomical_Twilight=input$Astronomical_Twilight,
                # Weather_Condition=input$Weather_Condition,
                # City=input$City
-               )
+              
   
   pred <- 
     predict(traffic_mod,data)
