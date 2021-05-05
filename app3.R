@@ -231,6 +231,9 @@ ui <- fluidPage(
               label = "Side of the street where the accident happened",
               choices = list(Right = "R",
                              Left = "L")),
+      selectInput(inputId = "City",
+                  label = "City where the accident happened",
+                  choices = Cities),
       sliderInput(inputId = "Temperature",
               label = "Temperature when accident happened",
               min = stats_num %>% 
@@ -352,9 +355,6 @@ ui <- fluidPage(
       selectInput(inputId = "Weather_Condition",
               label = "Weather condition when accident happened",
               choices = Weather),
-      selectInput(inputId = "City",
-              label = "City where the accident happened",
-              choices = Cities),
   # selectInput(inputId = "County",
   #             label = "County where the accident happened",
   #             choices = Counties),
@@ -381,6 +381,7 @@ server = function (input,output) {
       Start_Lng=input$Start_Lng,
       Distance=input$Distance,
       Side=input$Side,
+      City=input$City,
       Temperature=input$Temperature,
       Wind_Chill=input$Wind_Chill,
       Humidity=input$Humidity,
@@ -395,8 +396,7 @@ server = function (input,output) {
       Civil_Twilight=input$Civil_Twilight,
       Nautical_Twilight=input$Nautical_Twilight,
       Astronomical_Twilight=input$Astronomical_Twilight,
-      Weather_Condition=input$Weather_Condition,
-      City=input$City
+      Weather_Condition=input$Weather_Condition
     )
     
     
