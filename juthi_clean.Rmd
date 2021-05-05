@@ -3,7 +3,15 @@ title: "juthi_clean"
 author: "Juthi Dewan"
 date: "4/26/2021"
 output: html_document
+    toc: true
+    toc_float: true
+    df_print: paged
+    code_download: true
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+```
 
 ```{r}
 library(data.table)
@@ -51,7 +59,6 @@ library(rpart.plot)
 library(randomForest)
 options(warn = -1)
 ```
-
 
 
 
