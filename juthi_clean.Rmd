@@ -363,11 +363,7 @@ final_lasso %>%
   pull_workflow_fit() %>%
   tidy()
 
-final_lasso %>%
-  pull_workflow_fit() %>%
-  vip()
 ```
-
 
 
 ```{r, echo=FALSE}
@@ -423,162 +419,7 @@ rf_tune %>%
   collect_metrics()
 ```
 
-
-
-##Global interpretation
-
-```{r}
-best_accuracy <-
-  rf_tune %>% 
-  select_best(metric = "accuracy")
-
-rf_final_mod <- rf_workflow %>% 
-  finalize_workflow(best_accuracy) %>% 
-  fit(data = traffic_training)
-
-best_accuracy2 <-
-  lasso_tune %>% 
-  select_best(metric = "accuracy")
-
-lasso_final_mod <- lasso_wf %>% 
-  finalize_workflow(best_accuracy2) %>% 
-  fit(data = traffic_training)
-```
-
-```{r}
-rf_explain <- 
-  explain_tidymodels(
-    model = rf_final_mod,
-    data = traffic_training %>% select(-Status),
-    y = traffic_training %>% 
-      mutate(status_num = as.integer(Status =="Severe")) %>% 
-      pull(status_num),
-    label = "rf"
-  )
-
-lasso_explain <- 
-  explain_tidymodels(
-    model = lasso_final_mod,
-    data = traffic_training %>% select(-Status),
-    y = traffic_training %>% 
-      mutate(status_num = as.integer(Status =="Severe")) %>% 
-      pull(status_num),
-    label = "lasso"
-  )
-```
-
-```{r}
-rf_mod_perform <- model_performance(rf_explain)
-lasso_mod_perform <- model_performance(lasso_explain)
-```
-
-```{r}
-hist_plot_lasso <- 
-  plot(lasso_mod_perform,
-       geom = "histogram")
-box_plot_lasso <-
-  plot(lasso_mod_perform,
-       geom = "boxplot")
-
-hist_plot_lasso + box_plot_lasso
-
-hist_plot_rf <- 
-  plot(rf_mod_perform,
-       geom = "histogram")
-box_plot_rf <-
-  plot(rf_mod_perform,
-       geom = "boxplot")
-
-hist_plot_rf + box_plot_rf
-```
-
-```{r}
-set.seed(494) 
-
-lasso_var_imp <- 
-  model_parts(
-    lasso_explain
-    )
-
-plot(lasso_var_imp, show_boxplots = TRUE)
-
-rf_var_imp <- 
-  model_parts(
-    rf_explain
-    )
-
-plot(rf_var_imp, show_boxplots = TRUE)
-```
-
-
-##cp profile
-
-```{r}
-cp_profile <- function(explainer, obs, var){
-  cpp<-predict_profile(explainer = explainer, new_observation = obs, variables = var)
-  cpp %>%
-    filter(`_vname_` %in% c(var)) %>% 
-  ggplot(aes_string(x = var,
-             y = "`_yhat_`")) +
-  geom_line() 
-}
-  
-obs37 <- traffic_training %>%
-  slice(37)
-
-cp_profile(rf_explain, obs37, "Start_Lng")
-```
-```{r}
-set.seed(494) 
-
-rf_pdp <- model_profile(explainer = rf_explain, variables = "Start_Lng")
-
-plot(rf_pdp, 
-     variables = "Start_Lng",
-     geom = "profiles")
-```
-```{r}
-pp_rf <- predict_parts(explainer = rf_explain,
-                          new_observation = obs37,
-                          type = "break_down") #default
-
-# Break-down plot
-plot(pp_rf)
-```
-
-```{r}
-rf_shap <-predict_parts(explainer = rf_explain,
-                        new_observation = obs37,
-                        type = "shap",
-                        B = 10 #number of reorderings - start small
-)
-
-plot(rf_shap)
-```
-
-```{r}
-set.seed(494)
-
-model_type.dalex_explainer <- DALEXtra::model_type.dalex_explainer
-predict_model.dalex_explainer <- DALEXtra::predict_model.dalex_explainer
-
-lime_rf <- predict_surrogate(explainer = rf_explain,
-                             new_observation = obs37 %>%
-                               select(-Status), 
-                             n_features = 5,
-                             n_permutations = 1000,
-                             type = "lime")
-
-lime_rf %>% 
-  select(model_r2, model_prediction, prediction) %>% 
-  distinct()
-
-plot(lime_rf) +
-  labs(x = "Variable")
-```
-
-
-```{r}
+```{r, echo = FALSE}
 #decision trees
 set.seed(494)
 
@@ -635,8 +476,219 @@ traffic_blend
 traffic_final_stack <- traffic_blend %>%
   fit_members()
 
-saveRDS(traffic_final_stack, "traffic_final_stacked.rds")
+#saveRDS(traffic_final_stack, "traffic_final_stacked.rds")
 ```
+
+
+
+
+##Global interpretation of LASSO and Forest Model 
+
+```{r}
+best_accuracy <-
+  rf_tune %>% 
+  select_best(metric = "accuracy")
+
+rf_final_mod <- rf_workflow %>% 
+  finalize_workflow(best_accuracy) %>% 
+  fit(data = traffic_training)
+
+best_accuracy2 <-
+  lasso_tune %>% 
+  select_best(metric = "accuracy")
+
+lasso_final_mod <- lasso_wf %>% 
+  finalize_workflow(best_accuracy2) %>% 
+  fit(data = traffic_training)
+
+best_accuracy3 <-
+  tree_fit %>% 
+  select_best(metric = "accuracy")
+
+tree_final_mod <- tree_workflow %>% 
+  finalize_workflow(best_accuracy3) %>% 
+  fit(data = traffic_training)
+```
+
+```{r}
+rf_explain <- 
+  explain_tidymodels(
+    model = rf_final_mod,
+    data = traffic_training %>% select(-Status),
+    y = traffic_training %>% 
+      mutate(status_num = as.integer(Status =="Severe")) %>% 
+      pull(status_num),
+    label = "rf"
+  )
+
+lasso_explain <- 
+  explain_tidymodels(
+    model = lasso_final_mod,
+    data = traffic_training %>% select(-Status),
+    y = traffic_training %>% 
+      mutate(status_num = as.integer(Status =="Severe")) %>% 
+      pull(status_num),
+    label = "lasso"
+  )
+
+tree_explain <- 
+  explain_tidymodels(
+    model = tree_final_mod,
+    data = traffic_training %>% select(-Status),
+    y = traffic_training %>% 
+      mutate(status_num = as.integer(Status =="Severe")) %>% 
+      pull(status_num),
+    label = "tree"
+  )
+```
+
+```{r}
+rf_mod_perform <- model_performance(rf_explain)
+lasso_mod_perform <- model_performance(lasso_explain)
+tree_mod_perform <- model_performance(tree_explain)
+```
+
+```{r}
+hist_plot_lasso <- 
+  plot(lasso_mod_perform,
+       geom = "histogram")
+box_plot_lasso <-
+  plot(lasso_mod_perform,
+       geom = "boxplot")
+
+hist_plot_lasso + box_plot_lasso
+
+```
+
+```{r}
+hist_plot_rf <- 
+  plot(rf_mod_perform,
+       geom = "histogram")
+box_plot_rf <-
+  plot(rf_mod_perform,
+       geom = "boxplot")
+
+hist_plot_rf + box_plot_rf
+
+```
+
+
+```{r}
+hist_plot_tree <- 
+  plot(tree_mod_perform,
+       geom = "histogram")
+
+box_plot_tree <-
+  plot(tree_mod_perform,
+       geom = "boxplot")
+
+hist_plot_tree + box_plot_tree
+```
+
+
+```{r}
+set.seed(494) 
+
+lasso_var_imp <- 
+  model_parts(
+    lasso_explain
+    )
+
+plot(lasso_var_imp, show_boxplots = TRUE)
+
+```
+
+```{r}
+set.seed(494) 
+rf_var_imp <- 
+  model_parts(
+    rf_explain
+    )
+
+plot(rf_var_imp, show_boxplots = TRUE)
+```
+
+
+```{r}
+set.seed(494) 
+tree_var_imp <- 
+  model_parts(
+    tree_explain
+    )
+
+plot(tree_var_imp, show_boxplots = TRUE)
+```
+
+##cp profile
+
+```{r}
+cp_profile <- function(explainer, obs, var){
+  cpp<-predict_profile(explainer = explainer, new_observation = obs, variables = var)
+  cpp %>%
+    filter(`_vname_` %in% c(var)) %>% 
+  ggplot(aes_string(x = var,
+             y = "`_yhat_`")) +
+  geom_line() 
+}
+  
+obs37 <- traffic_training %>%
+  slice(37)
+
+cp_profile(rf_explain, obs37, "Start_Lng")
+```
+
+
+```{r}
+set.seed(494) 
+
+rf_pdp <- model_profile(explainer = rf_explain, variables = "Start_Lng")
+
+plot(rf_pdp, 
+     variables = "Start_Lng",
+     geom = "profiles")
+```
+```{r}
+pp_rf <- predict_parts(explainer = rf_explain,
+                          new_observation = obs37,
+                          type = "break_down") #default
+
+# Break-down plot
+plot(pp_rf)
+```
+
+```{r}
+rf_shap <-predict_parts(explainer = rf_explain,
+                        new_observation = obs37,
+                        type = "shap",
+                        B = 10 #number of reorderings - start small
+)
+
+plot(rf_shap)
+```
+
+```{r}
+set.seed(494)
+
+model_type.dalex_explainer <- DALEXtra::model_type.dalex_explainer
+predict_model.dalex_explainer <- DALEXtra::predict_model.dalex_explainer
+
+lime_rf <- predict_surrogate(explainer = rf_explain,
+                             new_observation = obs37 %>%
+                               select(-Status), 
+                             n_features = 5,
+                             n_permutations = 1000,
+                             type = "lime")
+
+lime_rf %>% 
+  select(model_r2, model_prediction, prediction) %>% 
+  distinct()
+
+plot(lime_rf) +
+  labs(x = "Variable")
+```
+
+
+
 
 
 
