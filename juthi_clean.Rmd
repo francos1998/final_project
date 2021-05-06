@@ -444,8 +444,9 @@ collect_metrics(tree_fit)
 ```
 
 
-# model stacking 
+
 ```{r}
+# model stacking 
 lasso_tune %>%
   collect_metrics()
 
@@ -482,7 +483,11 @@ traffic_final_stack <- traffic_blend %>%
 
 
 
-##Global interpretation of LASSO and Forest Model 
+#Global interpretation 
+
+Global model interpretations explain the overall relationships between the predictor variables and the response. 
+
+##Model performance
 
 ```{r}
 best_accuracy <-
@@ -548,43 +553,50 @@ lasso_mod_perform <- model_performance(lasso_explain)
 tree_mod_perform <- model_performance(tree_explain)
 ```
 
-```{r}
-hist_plot_lasso <- 
-  plot(lasso_mod_perform,
-       geom = "histogram")
-box_plot_lasso <-
-  plot(lasso_mod_perform,
-       geom = "boxplot")
-
-hist_plot_lasso + box_plot_lasso
-
-```
-
-```{r}
-hist_plot_rf <- 
-  plot(rf_mod_perform,
-       geom = "histogram")
-box_plot_rf <-
-  plot(rf_mod_perform,
-       geom = "boxplot")
-
-hist_plot_rf + box_plot_rf
+```{r, echo = FALSE}
+# hist_plot_lasso <- 
+#   plot(lasso_mod_perform,
+#        geom = "histogram")
+# box_plot_lasso <-
+#   plot(lasso_mod_perform,
+#        geom = "boxplot")
+# 
+# hist_plot_lasso + box_plot_lasso
 
 ```
 
+```{r, echo = FALSE}
+# hist_plot_rf <- 
+#   plot(rf_mod_perform,
+#        geom = "histogram")
+# box_plot_rf <-
+#   plot(rf_mod_perform,
+#        geom = "boxplot")
+# 
+# hist_plot_rf + box_plot_rf
 
-```{r}
-hist_plot_tree <- 
-  plot(tree_mod_perform,
-       geom = "histogram")
-
-box_plot_tree <-
-  plot(tree_mod_perform,
-       geom = "boxplot")
-
-hist_plot_tree + box_plot_tree
 ```
 
+
+```{r, echo = FALSE}
+# hist_plot_tree <- 
+#   plot(tree_mod_perform,
+#        geom = "histogram")
+# 
+# box_plot_tree <-
+#   plot(tree_mod_perform,
+#        geom = "boxplot")
+# 
+# hist_plot_tree + box_plot_tree
+```
+
+```{r}
+plot(tree_mod_perform,lasso_mod_perform,rf_mod_perform,geom = "histogram")+
+plot(tree_mod_perform,lasso_mod_perform,rf_mod_perform,geom = "boxplot")
+```
+As we can see from the histograms, the majority of the residual values are clustered in values close to 0. The model with the lowest average residual value is lasso, followed by the tree model and the forest model. While the lasso and the forest models are left skewed this is not the case for the classification tree. The residuals for the classification tree are more spread towards the positive and the negative values, showing that this model might be less precise than the other two. 
+
+##Variable of importance 
 
 ```{r}
 set.seed(494) 
@@ -618,8 +630,11 @@ tree_var_imp <-
 
 plot(tree_var_imp, show_boxplots = TRUE)
 ```
+We can see that there are more variables with greater importance in the lasso and the forest models. This means that, the values that are at the top generate great increases in the performance of the model when permuted relative to the other variables. The length of the bars indicate how much the performance increases when that variable is permuted. Permuting is the process of exchanging the values of a variable between observations. We can see that the lasso and forest model's performance increase when start longitude is permuted. This is the case for city in the classification tree. 
 
-##cp profile
+##Ceteris-Paribus Profile
+
+This profiles show how one variable affects the outcome holding all other variables fixed for one observation. 
 
 ```{r}
 cp_profile <- function(explainer, obs, var){
@@ -637,16 +652,23 @@ obs37 <- traffic_training %>%
 cp_profile(rf_explain, obs37, "Start_Lng")
 ```
 
+In this graph we can see how changes to the values of the starting longitude affect the probability that the accident is Severe, holding all the other variables constant. As we can see, the probability that an accident is severe changes drastically whit different start longitude values, reflecting the importance of the variable for the forest model. 
+
+##Partial Dependence Plots
 
 ```{r}
 set.seed(494) 
 
-rf_pdp <- model_profile(explainer = rf_explain, variables = "Start_Lng")
+rf_pdp <- model_profile(explainer = rf_explain)
 
 plot(rf_pdp, 
      variables = "Start_Lng",
      geom = "profiles")
 ```
+Remember the CP profile used only one observation? A partial dependence plot is created by averaging the CP profiles for a sample of observations. The partial dependence profile is the blue line. We can see that overall, changes to the value of the longitude affect the probability that an accident is sever significantly. If we were to analyze the dependence plot for lasso the lines we would see inclined parallel lines given that lasso is additive. This is not very informative, that's why we decided to focus on the forest model. 
+
+#Local Interpretation
+
 ```{r}
 pp_rf <- predict_parts(explainer = rf_explain,
                           new_observation = obs37,
