@@ -656,6 +656,8 @@ In this graph we can see how changes to the values of the starting longitude aff
 
 ##Partial Dependence Plots
 
+Remember the CP profile used only one observation? A partial dependence plot is created by averaging the CP profiles for a sample of observations. The partial dependence profile is the blue line. We can see that overall, changes to the value of the longitude affect the probability that an accident is sever significantly. If we were to analyze the dependence plot for lasso the lines we would see inclined parallel lines given that lasso is additive. This is not very informative, that's why we decided to focus on the forest model. 
+
 ```{r}
 set.seed(494) 
 
@@ -665,20 +667,20 @@ plot(rf_pdp,
      variables = "Start_Lng",
      geom = "profiles")
 ```
-Remember the CP profile used only one observation? A partial dependence plot is created by averaging the CP profiles for a sample of observations. The partial dependence profile is the blue line. We can see that overall, changes to the value of the longitude affect the probability that an accident is sever significantly. If we were to analyze the dependence plot for lasso the lines we would see inclined parallel lines given that lasso is additive. This is not very informative, that's why we decided to focus on the forest model. 
 
-#Local Interpretation
 
-```{r}
-pp_rf <- predict_parts(explainer = rf_explain,
-                          new_observation = obs37,
-                          type = "break_down") #default
 
-# Break-down plot
-plot(pp_rf)
-```
+#Local Model Interpretation
 
-```{r}
+Local model interpretation helps us understand the impact of variables on individual observations. 
+
+
+##Shapley Additive Explanations (SHAP)
+
+For Break Down profiles, the contributions of variables would change with the order in which the variables are considered in the random forest model. Therefore we decided to use the SHAP. 
+
+
+```{r, cache = TRUE}
 rf_shap <-predict_parts(explainer = rf_explain,
                         new_observation = obs37,
                         type = "shap",
@@ -687,6 +689,12 @@ rf_shap <-predict_parts(explainer = rf_explain,
 
 plot(rf_shap)
 ```
+
+Each bar shows the average contribution of each variable's value to the predicted severity for this observed accident. We can see that a duration of 44.62 contributes almost an additional 0.15 to the predicted probability of a severe accident, on average. The boxplot shows the variation across permutations of the order of the variable. A large variation would mean that we should be less confident in its exact effect. For example we see that Nautical twilight has a large variation; therefore, we aren't confident about it's contribution to the prediction. 
+
+
+##Local Interpretable Model-agnostic Explanations (LIME)
+
 
 ```{r}
 set.seed(494)
@@ -708,7 +716,16 @@ lime_rf %>%
 plot(lime_rf) +
   labs(x = "Variable")
 ```
+The table shows the predicted value from the local model as 0.2624304. and the prediction from the original forest model of 6.17 This graph shows us the predicted value from the original random forest model as "Prediction". The *r^2* of the model is shown as the "Explanation fit" showing that the model explains 25% of the variance of our sample. The bars show that distance is the most important variable in the local model. 
 
+
+#Conclusion: 
+
+We have explored how changes in the values of variables for an observation can affect the predicted outcome using two methods. Both methods show similar results; however, it's important to note that while the SHAP plot include more variables, it is less reliable. We have seen also that starting longitude is the most important variables according to two of our models, and that changing its value for an observation holding the other variables constant changes the predicted value significantly. Even with slight differences all of the models showed similar results for variables of interest, showing that the results are coherent and reasonable. We can conclude that overall, distance, starting longitude, duration and month are the most important variables for the prediction of the severity of an accident. 
+
+#Repercussions: 
+
+Our analysis only focused on environmental factors that are associated with the severity of an accident. There are multiple other factors that we didn't include like speed or whether the driver was intoxicated. Therefore, the model and the analysis is not complete and should not be regarded as such. On the other hand, this analysis didn't account for demographics; therefore, the differences in locations do not respond to anyone's ethnicity, education, sex or any other identity. This model is meant to further analyze what external factors contribute the most to the severity of an accident. 
 
 
 
