@@ -63,14 +63,12 @@ options(warn = -1)
 
 
 ```{r}
-cars <- read_csv("small_accidents.csv", col_types = cols(.default = col_character())) %>% 
+small_accidents <- read_csv("small_accidents.csv", col_types = cols(.default = col_character())) %>% 
   type_convert()
 
-cars %>%
-  group_by(City) %>%
-  summarize(Count=n()) %>%
-  arrange(desc(Count)) %>%
-  head(1000)
+cars <- 
+  small_accidents %>%
+  filter(State == c("CA", "TX", "FL", "SC", "NC"))
 ```
 
 
