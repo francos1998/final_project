@@ -94,18 +94,17 @@ cars %>% summarise_all(~ mean(is.na(.))) %>%
   pivot_longer(1:49, names_to = "Variables to drop", values_to = "NA proportion") %>% 
   filter(`NA proportion` >= 0.5)
 
-#do some reporting for why you're choosing to leave them out 
 
 drop_na_cols <- c("End_Lat", "End_Lng", "Number")
 
 not_useful <- c("ID", "Source", "Timezone", "Airport_Code", "Weather_Timestamp","Wind_Direction", "Description", "Bump", "Traffic_Calming", "Give_Way", "No_Exit", "Railway", "Roundabout", "Station", "Stop", "Amenity", "Street", "Zipcode", "Country", "Turning_Loop", "County", "TMC")
 
-#eliminated due to near-zero variance, step function can also get rid of them. 
 
 traffic <- 
   cars %>% 
   select(-all_of(drop_na_cols), -all_of(not_useful))
 ```
+
 
 ```{r}
 p1 <- ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) + 
@@ -176,6 +175,8 @@ p5+ p6+ p7+ p8
 
 p9+ p10+ p11+ p12
 ```
+
+We chose to not use multiple of the 47 variables that we considered weren't relevant to the analysis we were conducting. As we can see in the table, end latitude, end longitude's proportion of NA values are higher than 50%. Given the distribution of wind direction through the different severity levels, we decided that the variable is uninformative. The description, bump, traffic calming, give way, no exit, railway, roundabout, station, stop, amenity, street, zip code, country, turning loop, county and TMC code weren't informative either given the distribution between the severity categories or near-zero variance. 
 
 
 ```{r}
