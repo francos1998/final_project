@@ -84,6 +84,8 @@ The data we used has 47 variables and 3 million observations for different car a
 
 #Models
 
+Using this data set, we predicted the Severity of an accident using stacked LASSO, Forest and classification three. Stacking combines predictions from many different models into a "super" predictor. In this case we would be averaging the predictions of the LASSO, Forest and classification three. 
+
 
 #Pre-processing
 
