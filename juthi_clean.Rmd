@@ -76,7 +76,14 @@ cars %>%
 
 #Introduction
 
-Tra
+The Fatality Analysis Reporting System indicated that an estimate of 8870 people died in motor vehicle traffic crashes in the second quarter of 2020 (NHTSA, 2020). This analysis is intended to bring light to the main environmental conditions that are associated with the severity of a car accident. For the purpose of this study we defined severity as the accident's impact on traffic.
+
+#Data
+
+The data we used has 47 variables and 3 million observations for different car accidents. The data was collected from February 2016 to December 2020 for the 49 states of the US. The data base has been constructed partly by Moosavi, Sobhan, Mohammad Hossein Samavatian, Srinivasan Parthasarathy, and Rajiv Ramnath as “A Countrywide Traffic Accident Dataset” (2019). The other part of the data base was constructed by Moosavi, Sobhan, Mohammad Hossein Samavatian, Srinivasan Parthasarathy, Radu Teodorescu, and Rajiv Ramnath for their database “Accident Risk Prediction based on Heterogeneous Sparse Data: New Dataset and Insights.” 
+
+#Models
+
 
 #Pre-processing
 
