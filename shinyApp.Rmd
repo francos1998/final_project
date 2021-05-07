@@ -22,26 +22,9 @@ library(tidymodels)        # for modeling ... tidily
 library(glmnet)            # for regularized regression, including LASSO
 library(naniar)            # for examining missing values (NAs)
 library(lubridate)         # for date manipulation
-library(moderndive)        # for King County housing data
-library(vip)               # for variable importance plots
 library(rmarkdown)         # for paged tables
-theme_set(theme_minimal()) # my favorite ggplot2 theme :)
-
-
-
 library(themis)            # for step functions for unbalanced data
 library(stacks)            # for stacking models
-library(lubridate)         # for date manipulation
-library(moderndive)        # for King County housing data
-library(vip)               # for variable importance plots
-library(DALEX)             # for model interpretation  
-library(DALEXtra)          # for extension of DALEX
-library(patchwork)         # for combining plots nicely
-library(bslib)
-theme_set(theme_minimal()) # Lisa's favorite theme
-
-
-
 library(scales)
 library(plotly)
 library(gridExtra)
@@ -53,6 +36,8 @@ library(glmnet)
 library(rpart)
 library(rpart.plot)
 library(randomForest)
+library(shiny)
+library(bslib)
 ```
 
 
