@@ -1,4 +1,9 @@
 ---
+title: "Behind scenes of car accident severity prediction"
+output: html_document
+---
+
+---
 title: "Prediction of the Severity of Car Accidents"
 author: "Juthi Dewan, Coco Li, Franco Salinas"
 date: "5/07/2021"
@@ -79,7 +84,7 @@ Using this data set, we predicted the Severity of an accident using stacked LASS
 
 #Pre-processing
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 cars %>% summarise_all(~ mean(is.na(.))) %>%
   pivot_longer(1:49, names_to = "Variables to drop", values_to = "NA proportion") %>%
   filter(`NA proportion` >= 0.5)
@@ -169,7 +174,7 @@ p9+ p10+ p11+ p12
 We chose to not use multiple of the 47 variables that we considered weren't relevant to the analysis we were conducting. As we can see in the table, end latitude, end longitude's proportion of NA values are higher than 50%. Given the distribution of wind direction through the different severity levels, we decided that the variable is uninformative. The description, bump, traffic calming, give way, no exit, railway, roundabout, station, stop, amenity, street, zip code, country, turning loop, county and TMC code weren't informative either given the distribution between the severity categories or near-zero variance.
 
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 traffic <-  traffic %>%
   rename("Distance" = `Distance(mi)`, "Temperature" = `Temperature(F)`, "Humidity" = `Humidity(%)`,
          "Pressure" = `Pressure(in)`, "Visibility" = `Visibility(mi)`, "Wind_Speed" = `Wind_Speed(mph)`, "Precipitation" = `Precipitation(in)`, "Wind_Chill" = `Wind_Chill(F)`)
@@ -187,7 +192,7 @@ traffic <- traffic %>%
                            levels = c("Not Severe", "Severe")))
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 traffic_time <- traffic %>%
   mutate(Duration = (End_Time - Start_Time)) %>%
   # accident duration should be positive
@@ -204,7 +209,7 @@ traffic_time <- traffic %>%
 ```
 
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 #Drop levels that have less than 20 observations
 weather_to_drop <-
   traffic_time %>%
@@ -249,7 +254,7 @@ read_csv("traffic_final.csv")
 We also decided to group the four levels of severity status into two categories. Given the large amount of levels for the weather condition variable I decided to use only the levels that had a count higher than 20.
 
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 #modeling pre-process for traffic_final
 
 traffic_mod <- traffic_final %>%
@@ -409,7 +414,7 @@ rf_tune %>%
   collect_metrics()
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 #decision trees
 set.seed(494)
 
@@ -435,7 +440,7 @@ collect_metrics(tree_fit)
 
 
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 # model stacking
 lasso_tune %>%
   collect_metrics()
@@ -448,7 +453,7 @@ tree_fit %>%
 ```
 
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 traffic_stack <-
   stacks() %>%
   add_candidates(lasso_tune) %>%
@@ -456,14 +461,14 @@ traffic_stack <-
   add_candidates(tree_fit)
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 traffic_blend <-
   traffic_stack %>%
   blend_predictions()
 traffic_blend
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 traffic_final_stack <- traffic_blend %>%
   fit_members()
 
@@ -479,7 +484,7 @@ Global model interpretations explain the overall relationships between the predi
 
 ##Model performance
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 best_accuracy <-
   rf_tune %>%
   select_best(metric = "accuracy")
@@ -505,7 +510,7 @@ tree_final_mod <- tree_workflow %>%
   fit(data = traffic_training)
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 rf_explain <-
   explain_tidymodels(
     model = rf_final_mod,
@@ -543,7 +548,7 @@ lasso_mod_perform <- model_performance(lasso_explain)
 tree_mod_perform <- model_performance(tree_explain)
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 # hist_plot_lasso <-
 #   plot(lasso_mod_perform,
 #        geom = "histogram")
@@ -555,7 +560,7 @@ tree_mod_perform <- model_performance(tree_explain)
 
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 # hist_plot_rf <-
 #   plot(rf_mod_perform,
 #        geom = "histogram")
@@ -568,7 +573,7 @@ tree_mod_perform <- model_performance(tree_explain)
 ```
 
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 # hist_plot_tree <-
 #   plot(tree_mod_perform,
 #        geom = "histogram")
