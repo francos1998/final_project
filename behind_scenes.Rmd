@@ -97,10 +97,7 @@ not_useful <- c("ID", "Source", "Timezone", "Airport_Code", "Weather_Timestamp",
 traffic <-
   cars %>%
   select(-all_of(drop_na_cols), -all_of(not_useful))
-```
 
-
-```{r}
 p1 <- ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) +
   geom_bar(aes(fill = Severity), position = "dodge") +
   scale_y_continuous(labels = percent) +
@@ -191,6 +188,12 @@ traffic <- traffic %>%
                            levels = c("Not Severe", "Severe")))
 ```
 
+
+In this section of data cleaning and pre-processing above, we renamed some of the variables that had their units of measurement for ease of use later in our modeling and for our shinyApp. We took out entries of data that had NAs. If this was a smaller dataset, this may have negatively impacted our analysis, but we don't believe this effected our analysis for this project because even after taking out some data, we had a lot left to work with. Another very important part of this section is that, we took the Severity variable that we are looking at and split it into two to make it into a Categorical variable called Status. Severities 1 and 2 were grouped in to be Not Severe and 3 and 4 were grouped as Severe in the Status variable. 
+
+<br>
+
+
 ```{r, echo = TRUE}
 traffic_time <- traffic %>%
   mutate(Duration = (End_Time - Start_Time)) %>%
@@ -200,12 +203,12 @@ traffic_time <- traffic %>%
   mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10),
          "Wday" = as.character(wday(Date))) %>%
   mutate("Hour" = str_sub(Time,1,2)) %>%
-  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"),
-                           levels = c("Not Severe", "Severe"))) %>%
   select(-c("Date", "Time", "End_Time")) %>%
   select(Severity, Year, Month, Day, Hour, Wday, Duration, everything())
 
 ```
+
+In this section, we used the End_Time and Start_Time variables to come up with several other variables such as Duration, Date, Time, Year, Month, Day, Wday and Hour. 
 
 
 ```{r, echo = TRUE}
@@ -250,7 +253,8 @@ traffic_final <-
 read_csv("traffic_final.csv")
 ```
 
-We also decided to group the four levels of severity status into two categories. Given the large amount of levels for the weather condition variable I decided to use only the levels that had a count higher than 20.
+
+Upon close examination of the Weather_Conditions variable, we realized that it had a lot of different observations and we wanted to narrow it down. So, we filtered and dropped levels that have less than 20 observations. We had to narrow down the City variable as well. We have over 4000 distinct cities under the top 12 states. Shiny only allows a thousand different observations and so in order for all the top cities to fit in our shiny app, we had to narrow down the list of cities to the top 950. 
 
 
 ```{r, echo = TRUE}
