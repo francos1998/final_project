@@ -81,7 +81,6 @@ The data we used has 47 variables and 3 million observations for different car a
 
 Using this data set, we predicted the Severity of an accident using stacked LASSO, Forest and classification three. Stacking combines predictions from many different models into a "super" predictor. In this case we would be averaging the predictions of the LASSO, Forest and classification three.
 
-
 # Pre-processing
 
 ```{r, echo = TRUE}
@@ -289,6 +288,8 @@ traffic_training <- training(traffic_split)
 traffic_testing <- testing(traffic_split)
 ```
 
+Here, we get the data ready for the modeling part by taking the non-predictive variables out of our data set, and converting the predictors' data type into the correct type. After that, we split our data into testing and training data according to a 50 percentage split.
+
 ```{r, echo=FALSE}
 #lasso
 set.seed(494)
@@ -360,6 +361,7 @@ final_lasso %>%
 
 ```
 
+The first model we build is a classification LASSO model, which selects the variables based on the magnitude of their coefficients. We tuned the LASSO model using a level 10 panelty grid, and selected the tuning parameter with the best prediction accuracy as the parameter for the final model. The accuracy for the best LASSO model is 80.956%, which means that the LASSO model predicts the right severity level 80.956% of the times. 
 
 ```{r, echo=FALSE}
 #classification rf
@@ -414,6 +416,8 @@ rf_tune %>%
   collect_metrics()
 ```
 
+After conducting the LASSO model, we also build the random forest model, which builds 10 trees and gives out the mode of the predictions of these 10 trees. We thought that this model might be more accurate than the LASSO model although it is also more computationally inefficient. We used a panelty grid of level 3 to tune our random forest model, and the tuning parameter with the largest accuracy is with `mtry` = 12 and `min_n` = 40. The largest accuracy is 84.693%, which is higher than the LASSO model.
+
 ```{r, echo = TRUE}
 #decision trees
 set.seed(494)
@@ -437,7 +441,7 @@ tree_fit <-
 
 collect_metrics(tree_fit)
 ```
-
+Finally, in order to create a stacked model, we build a third model which is just a simple classification decision tree. The accuracy for the decision tree model is 82.559%, which is also higher than the LASSO.
 
 
 ```{r, echo = TRUE}
@@ -625,6 +629,7 @@ tree_var_imp <-
 
 plot(tree_var_imp, show_boxplots = TRUE)
 ```
+
 We can see that there are more variables with greater importance in the lasso and the forest models. This means that, the values that are at the top generate great increases in the performance of the model when permuted relative to the other variables. The length of the bars indicate how much the performance increases when that variable is permuted. Permuting is the process of exchanging the values of a variable between observations. We can see that the lasso and forest model's performance increase when start longitude is permuted. This is the case for city in the classification tree.
 
 ### Ceteris-Paribus Profile
@@ -645,6 +650,8 @@ obs37 <- traffic_training %>%
   slice(37)
 
 cp_profile(rf_explain, obs37, "Start_Lng")
+cp_profile(lasso_explain, obs37, "Start_Lng")
+cp_profile(tree_explain, obs37, "Start_Lng")
 ```
 
 In this graph we can see how changes to the values of the starting longitude affect the probability that the accident is Severe, holding all the other variables constant. As we can see, the probability that an accident is severe changes drastically whit different start longitude values, reflecting the importance of the variable for the forest model.
@@ -662,7 +669,6 @@ plot(rf_pdp,
      variables = "Start_Lng",
      geom = "profiles")
 ```
-
 
 
 # Local Model Interpretation
