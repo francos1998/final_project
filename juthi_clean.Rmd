@@ -2,7 +2,6 @@
 title: "Prediction of the Severity of Car Accidents"
 author: "Juthi Dewan, Coco Li, Franco Salinas"
 date: "5/07/2021"
-# runtime: shiny
 output:
   html_document:
     df_print: paged
@@ -475,11 +474,11 @@ traffic_final_stack <- traffic_blend %>%
 
 
 
-#Global interpretation
+## Global interpretation
 
 Global model interpretations explain the overall relationships between the predictor variables and the response.
 
-##Model performance
+### Model performance
 
 ```{r, echo = FALSE}
 best_accuracy <-
@@ -588,7 +587,7 @@ plot(tree_mod_perform,lasso_mod_perform,rf_mod_perform,geom = "boxplot")
 ```
 As we can see from the histograms, the majority of the residual values are clustered in values close to 0. The model with the lowest average residual value is lasso, followed by the tree model and the forest model. While the lasso and the forest models are left skewed this is not the case for the classification tree. The residuals for the classification tree are more spread towards the positive and the negative values, showing that this model might be less precise than the other two.
 
-##Variable of importance
+### Variable of importance
 
 ```{r}
 set.seed(494)
@@ -624,7 +623,7 @@ plot(tree_var_imp, show_boxplots = TRUE)
 ```
 We can see that there are more variables with greater importance in the lasso and the forest models. This means that, the values that are at the top generate great increases in the performance of the model when permuted relative to the other variables. The length of the bars indicate how much the performance increases when that variable is permuted. Permuting is the process of exchanging the values of a variable between observations. We can see that the lasso and forest model's performance increase when start longitude is permuted. This is the case for city in the classification tree.
 
-##Ceteris-Paribus Profile
+### Ceteris-Paribus Profile
 
 This profiles show how one variable affects the outcome holding all other variables fixed for one observation.
 
@@ -646,7 +645,7 @@ cp_profile(rf_explain, obs37, "Start_Lng")
 
 In this graph we can see how changes to the values of the starting longitude affect the probability that the accident is Severe, holding all the other variables constant. As we can see, the probability that an accident is severe changes drastically whit different start longitude values, reflecting the importance of the variable for the forest model.
 
-##Partial Dependence Plots
+### Partial Dependence Plots
 
 Remember the CP profile used only one observation? A partial dependence plot is created by averaging the CP profiles for a sample of observations. The partial dependence profile is the blue line. We can see that overall, changes to the value of the longitude affect the probability that an accident is sever significantly. If we were to analyze the dependence plot for lasso the lines we would see inclined parallel lines given that lasso is additive. This is not very informative, that's why we decided to focus on the forest model.
 
@@ -662,12 +661,12 @@ plot(rf_pdp,
 
 
 
-#Local Model Interpretation
+## Local Model Interpretation
 
 Local model interpretation helps us understand the impact of variables on individual observations. We will focus on the random forest model given that it is the model with the higher accuracy. We would like to do the interpretation for the stacked model, but this isn't possible using DALEX and DALEXtra. Considering that out stacked model has few models stacked, we think that doing the analysis of the random forest model should give us a fair idea of what is the local importance of our variables.
 
 
-##Shapley Additive Explanations (SHAP)
+### Shapley Additive Explanations (SHAP)
 
 For Break Down profiles, the contributions of variables would change with the order in which the variables are considered in the random forest model. Therefore we decided to use the SHAP.
 
@@ -685,7 +684,7 @@ plot(rf_shap)
 Each bar shows the average contribution of each variable's value to the predicted severity for this observed accident. We can see that a duration of 44.62 contributes almost an additional 0.15 to the predicted probability of a severe accident, on average. The boxplot shows the variation across permutations of the order of the variable. A large variation would mean that we should be less confident in its exact effect. For example we see that Nautical twilight has a large variation; therefore, we aren't confident about it's contribution to the prediction.
 
 
-##Local Interpretable Model-agnostic Explanations (LIME)
+### Local Interpretable Model-agnostic Explanations (LIME)
 
 
 ```{r}
@@ -712,12 +711,12 @@ plot(lime_rf) +
 The table shows the predicted value from the local model as 0.2624304. and the prediction from the original forest model of 6.17 This graph shows us the predicted value from the original random forest model as "Prediction". The r-squared value of the model is shown as the "Explanation fit" showing that the model explains 25% of the variance of our sample. The bars show that distance is the most important variable in the local model.
  
 
-#Conclusion:
+## Conclusion:
 
 We have explored how changes in the values of variables for an observation can affect the predicted outcome using two methods. Both methods show similar results; however, it's important to note that while the SHAP plot includes more variables, it is less reliable. We have seen also that starting longitude is the most important variable according to two of our models, and that changing its value for an observation holding the other variables constant changes the predicted value significantly. Even with slight differences all of the models showed similar results for the variables of interest, showing that the results are coherent and reasonable. We can conclude that overall, distance, starting longitude, duration and month are the most important variables for the prediction of the severity of an accident. This means that depending on the month, the weather or the amount of traffic could be associated with the severity of an accident. The length of the road extent affected by the accident also is a good predictor for severity. The time between the start of the accident and the end of the impact on traffic flow also are associated with the severity. Lastly, there is a strong association between starting longitude of the accident and the severity which could be driven by demographic or other non-controlled characteristics that differentiate western to eastern states.
 
 
-#Repercussions:
+## Repercussions:
 
 Our analysis only focused on environmental factors that are associated with the severity of an accident. There are multiple other factors that we didn't include like speed or whether the driver was intoxicated. Therefore, the model and the analysis is not complete and should not be regarded as such. On the other hand, this analysis didn't account for demographics; therefore, the differences in locations do not respond to anyone's ethnicity, education, sex or any other identity. This model is meant to further analyze what external factors contribute the most to the severity of an accident.
 
