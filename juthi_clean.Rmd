@@ -5,10 +5,12 @@ date: "5/07/2021"
 # runtime: shiny
 output:
   html_document:
-    toc: true
-    toc_float: true
     df_print: paged
+    toc: TRUE
+    toc_float: TRUE
     code_download: true
+    code_folding: hide
+    theme: journal
 ---
 
 ```{r setup, include=FALSE}
@@ -580,7 +582,7 @@ tree_mod_perform <- model_performance(tree_explain)
 # hist_plot_tree + box_plot_tree
 ```
 
-```{r}
+```{r, echo = FALSE}
 plot(tree_mod_perform,lasso_mod_perform,rf_mod_perform,geom = "histogram")+
 plot(tree_mod_perform,lasso_mod_perform,rf_mod_perform,geom = "boxplot")
 ```
