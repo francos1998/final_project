@@ -2,7 +2,9 @@
 title: "juthi_clean"
 author: "Juthi Dewan"
 date: "4/26/2021"
-output: html_document
+# runtime: shiny
+output:
+  html_document:
     toc: true
     toc_float: true
     df_print: paged
@@ -10,7 +12,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+# knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r}
@@ -26,27 +28,12 @@ library(lubridate)         # for date manipulation
 library(moderndive)        # for King County housing data
 library(vip)               # for variable importance plots
 library(rmarkdown)         # for paged tables
-theme_set(theme_minimal()) # my favorite ggplot2 theme :)
-
-
-
-library(tidyverse)         # for graphing and data cleaning
-library(tidymodels)        # for modeling
 library(themis)            # for step functions for unbalanced data
 library(stacks)            # for stacking models
-library(naniar)            # for examining missing values (NAs)
-library(lubridate)         # for date manipulation
-library(moderndive)        # for King County housing data
-library(vip)               # for variable importance plots
 library(DALEX)             # for model interpretation  
 library(DALEXtra)          # for extension of DALEX
 library(patchwork)         # for combining plots nicely
-theme_set(theme_minimal()) # Lisa's favorite theme
-
-
-library(tidyverse)
 library(scales)
-library(lubridate)
 library(plotly)
 library(gridExtra)
 library(tidytext)
@@ -57,18 +44,23 @@ library(glmnet)
 library(rpart)
 library(rpart.plot)
 library(randomForest)
+library(shiny)
+library(bslib)
 options(warn = -1)
+theme_set(theme_minimal()) # my favorite ggplot2 theme :)
 ```
 
 
 
 ```{r}
-small_accidents <- read_csv("small_accidents.csv", col_types = cols(.default = col_character())) %>% 
+cars <- read_csv("small_accidents.csv", col_types = cols(.default = col_character())) %>%
   type_convert()
 
-cars <- 
-  small_accidents %>%
-  filter(State == c("CA", "TX", "FL", "SC", "NC"))
+cars %>%
+  group_by(City) %>%
+  summarize(Count=n()) %>%
+  arrange(desc(Count)) %>%
+  head(1000)
 ```
 
 
@@ -78,18 +70,18 @@ The Fatality Analysis Reporting System indicated that an estimate of 8870 people
 
 #Data
 
-The data we used has 47 variables and 3 million observations for different car accidents. The data was collected from February 2016 to December 2020 for the 49 states of the US. The data base has been constructed partly by Moosavi, Sobhan, Mohammad Hossein Samavatian, Srinivasan Parthasarathy, and Rajiv Ramnath as “A Countrywide Traffic Accident Dataset” (2019). The other part of the data base was constructed by Moosavi, Sobhan, Mohammad Hossein Samavatian, Srinivasan Parthasarathy, Radu Teodorescu, and Rajiv Ramnath for their database “Accident Risk Prediction based on Heterogeneous Sparse Data: New Dataset and Insights.” 
+The data we used has 47 variables and 3 million observations for different car accidents. The data was collected from February 2016 to December 2020 for the 49 states of the US. The data base has been constructed partly by Moosavi, Sobhan, Mohammad Hossein Samavatian, Srinivasan Parthasarathy, and Rajiv Ramnath as “A Countrywide Traffic Accident Dataset” (2019). The other part of the data base was constructed by Moosavi, Sobhan, Mohammad Hossein Samavatian, Srinivasan Parthasarathy, Radu Teodorescu, and Rajiv Ramnath for their database “Accident Risk Prediction based on Heterogeneous Sparse Data: New Dataset and Insights.”
 
 #Models
 
-Using this data set, we predicted the Severity of an accident using stacked LASSO, Forest and classification three. Stacking combines predictions from many different models into a "super" predictor. In this case we would be averaging the predictions of the LASSO, Forest and classification three. 
+Using this data set, we predicted the Severity of an accident using stacked LASSO, Forest and classification three. Stacking combines predictions from many different models into a "super" predictor. In this case we would be averaging the predictions of the LASSO, Forest and classification three.
 
 
 #Pre-processing
 
 ```{r}
-cars %>% summarise_all(~ mean(is.na(.))) %>% 
-  pivot_longer(1:49, names_to = "Variables to drop", values_to = "NA proportion") %>% 
+cars %>% summarise_all(~ mean(is.na(.))) %>%
+  pivot_longer(1:49, names_to = "Variables to drop", values_to = "NA proportion") %>%
   filter(`NA proportion` >= 0.5)
 
 
@@ -98,18 +90,18 @@ drop_na_cols <- c("End_Lat", "End_Lng", "Number")
 not_useful <- c("ID", "Source", "Timezone", "Airport_Code", "Weather_Timestamp","Wind_Direction", "Description", "Bump", "Traffic_Calming", "Give_Way", "No_Exit", "Railway", "Roundabout", "Station", "Stop", "Amenity", "Street", "Zipcode", "Country", "Turning_Loop", "County", "TMC")
 
 
-traffic <- 
-  cars %>% 
+traffic <-
+  cars %>%
   select(-all_of(drop_na_cols), -all_of(not_useful))
 ```
 
 
 ```{r}
-p1 <- ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) + 
+p1 <- ggplot(cars, aes(as.factor(Station), ..prop.., group = Severity)) +
   geom_bar(aes(fill = Severity), position = "dodge") +
   scale_y_continuous(labels = percent) +
-  theme(axis.text.x = element_text(angle = 60, vjust = 0.6)) 
-  
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.6))
+ 
 p2 <-  ggplot(cars, aes(Turning_Loop, ..prop.., group = Severity)) +
   geom_bar(aes(fill = Severity), position = "dodge") +
   scale_y_continuous(labels = percent) +
@@ -174,24 +166,24 @@ p5+ p6+ p7+ p8
 p9+ p10+ p11+ p12
 ```
 
-We chose to not use multiple of the 47 variables that we considered weren't relevant to the analysis we were conducting. As we can see in the table, end latitude, end longitude's proportion of NA values are higher than 50%. Given the distribution of wind direction through the different severity levels, we decided that the variable is uninformative. The description, bump, traffic calming, give way, no exit, railway, roundabout, station, stop, amenity, street, zip code, country, turning loop, county and TMC code weren't informative either given the distribution between the severity categories or near-zero variance. 
+We chose to not use multiple of the 47 variables that we considered weren't relevant to the analysis we were conducting. As we can see in the table, end latitude, end longitude's proportion of NA values are higher than 50%. Given the distribution of wind direction through the different severity levels, we decided that the variable is uninformative. The description, bump, traffic calming, give way, no exit, railway, roundabout, station, stop, amenity, street, zip code, country, turning loop, county and TMC code weren't informative either given the distribution between the severity categories or near-zero variance.
 
 
 ```{r}
 traffic <-  traffic %>%
-  rename("Distance" = `Distance(mi)`, "Temperature" = `Temperature(F)`, "Humidity" = `Humidity(%)`, 
+  rename("Distance" = `Distance(mi)`, "Temperature" = `Temperature(F)`, "Humidity" = `Humidity(%)`,
          "Pressure" = `Pressure(in)`, "Visibility" = `Visibility(mi)`, "Wind_Speed" = `Wind_Speed(mph)`, "Precipitation" = `Precipitation(in)`, "Wind_Chill" = `Wind_Chill(F)`)
 
 traffic$Severity <- as.character(traffic$Severity)
 
 traffic <-
-  traffic %>% 
-  add_n_miss() %>% 
-  filter(n_miss_all == 0) %>% 
+  traffic %>%
+  add_n_miss() %>%
+  filter(n_miss_all == 0) %>%
   select(-n_miss_all)
 
 traffic <- traffic %>%
-  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
+  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"),
                            levels = c("Not Severe", "Severe")))
 ```
 
@@ -204,8 +196,8 @@ traffic_time <- traffic %>%
   mutate("Year" = str_sub(Date, 1, 4), "Month" = str_sub(Date, 6, 7), "Day" = str_sub(Date, 9, 10),
          "Wday" = as.character(wday(Date))) %>%
   mutate("Hour" = str_sub(Time,1,2)) %>%
-  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"), 
-                           levels = c("Not Severe", "Severe"))) %>% 
+  mutate("Status" = factor(ifelse(Severity == "3" | Severity == "4", "Severe", "Not Severe"),
+                           levels = c("Not Severe", "Severe"))) %>%
   select(-c("Date", "Time", "End_Time")) %>%
   select(Severity, Year, Month, Day, Hour, Wday, Duration, everything())
 
@@ -214,19 +206,19 @@ traffic_time <- traffic %>%
 
 ```{r}
 #Drop levels that have less than 20 observations
-weather_to_drop <- 
-  traffic_time %>% 
-    count(Weather_Condition) %>% 
-    filter(n < 20) %>% 
+weather_to_drop <-
+  traffic_time %>%
+    count(Weather_Condition) %>%
+    filter(n < 20) %>%
     select(Weather_Condition)
 
-weather_to_drop <- 
-  weather_to_drop$Weather_Condition %>% 
+weather_to_drop <-
+  weather_to_drop$Weather_Condition %>%
     unlist()
 
-traffic_weather <- traffic_time %>% 
-  filter(!(Weather_Condition %in% weather_to_drop)) %>% 
-  mutate(Weather_Condition = factor(Weather_Condition)) 
+traffic_weather <- traffic_time %>%
+  filter(!(Weather_Condition %in% weather_to_drop)) %>%
+  mutate(Weather_Condition = factor(Weather_Condition))
 
 traffic2 <- traffic_weather
 
@@ -240,10 +232,10 @@ traffic3 <-
   traffic2 %>%
     left_join(count_city, by="City")
 
-traffic_final <- 
-  traffic3 %>% 
-  add_n_miss() %>% 
-  filter(n_miss_all == 0) %>% 
+traffic_final <-
+  traffic3 %>%
+  add_n_miss() %>%
+  filter(n_miss_all == 0) %>%
   select(-n_miss_all) %>%
   select(-Count)
 
@@ -254,21 +246,21 @@ traffic_final <-
 read_csv("traffic_final.csv")
 ```
 
-We also decided to group the four levels of severity status into two categories. Given the large amount of levels for the weather condition variable I decided to use only the levels that had a count higher than 20. 
+We also decided to group the four levels of severity status into two categories. Given the large amount of levels for the weather condition variable I decided to use only the levels that had a count higher than 20.
 
 
 ```{r, echo = FALSE}
 #modeling pre-process for traffic_final
 
-traffic_mod <- traffic_final %>% 
-  mutate(Status = as.factor(Status)) %>% 
-  mutate(across(where(is.character), as.factor)) %>% 
+traffic_mod <- traffic_final %>%
+  mutate(Status = as.factor(Status)) %>%
+  mutate(across(where(is.character), as.factor)) %>%
   select(-c(State, Severity, Year, Day)) %>%
   # select(-arrival_date_year,
   #        -reservation_status,
-  #        -reservation_status_date) %>% 
-  add_n_miss() %>% 
-  filter(n_miss_all == 0) %>% 
+  #        -reservation_status_date) %>%
+  add_n_miss() %>%
+  filter(n_miss_all == 0) %>%
   select(-n_miss_all)
 
 
@@ -284,7 +276,7 @@ traffic_mod$Traffic_Signal <- as.factor(traffic_mod$Traffic_Signal)
 set.seed(494) #for reproducibility
 
 # Randomly assigns 75% of the data to training.
-traffic_split <- initial_split(traffic_mod, 
+traffic_split <- initial_split(traffic_mod,
                              prop = .50)
 traffic_split
 
@@ -365,18 +357,18 @@ final_lasso %>%
 
 
 ```{r, echo=FALSE}
-#classification rf 
+#classification rf
 set.seed(494)
 
-rf_recipe <- 
+rf_recipe <-
   recipe(Status ~ .,
-         data = traffic_training) %>% 
-  step_mutate_at(all_numeric(), 
+         data = traffic_training) %>%
+  step_mutate_at(all_numeric(),
                  fn = ~as.numeric(.))
 
 
-rf_recipe %>% 
-  prep() %>% 
+rf_recipe %>%
+  prep() %>%
   juice()
 
 
@@ -389,12 +381,12 @@ rf_model <-
 
 
 rf_workflow <-
-  workflow() %>% 
-  add_recipe(rf_recipe) %>% 
+  workflow() %>%
+  add_recipe(rf_recipe) %>%
   add_model(rf_model)
 
 
-rf_penalty_grid <- 
+rf_penalty_grid <-
   grid_regular(finalize(mtry(),
                         traffic_training %>%
                           select(-Status)),
@@ -405,8 +397,8 @@ rf_penalty_grid <-
 # traffic_cv <- vfold_cv(traffic_training,
 #                        v = 5)
 
-rf_tune <- 
-  rf_workflow %>% 
+rf_tune <-
+  rf_workflow %>%
   tune_grid(
     resamples = traffic_cv,
     grid = rf_penalty_grid,
@@ -421,19 +413,19 @@ rf_tune %>%
 #decision trees
 set.seed(494)
 
-tree_model <- 
-  decision_tree() %>% 
-  set_mode("classification") %>% 
+tree_model <-
+  decision_tree() %>%
+  set_mode("classification") %>%
   set_engine("rpart")
 
 tree_workflow <-
-  workflow() %>% 
+  workflow() %>%
   add_recipe(rf_recipe) %>%  
   add_model(tree_model)
 
-tree_fit <- 
-  tree_workflow %>% 
-  fit_resamples(traffic_cv, 
+tree_fit <-
+  tree_workflow %>%
+  fit_resamples(traffic_cv,
                 # metrics = metric,
                 control = control_stack_resamples()
   )
@@ -444,7 +436,7 @@ collect_metrics(tree_fit)
 
 
 ```{r}
-# model stacking 
+# model stacking
 lasso_tune %>%
   collect_metrics()
 
@@ -466,7 +458,7 @@ traffic_stack <-
 
 ```{r}
 traffic_blend <-
-  traffic_stack %>% 
+  traffic_stack %>%
   blend_predictions()
 traffic_blend
 ```
@@ -481,65 +473,65 @@ traffic_final_stack <- traffic_blend %>%
 
 
 
-#Global interpretation 
+#Global interpretation
 
-Global model interpretations explain the overall relationships between the predictor variables and the response. 
+Global model interpretations explain the overall relationships between the predictor variables and the response.
 
 ##Model performance
 
 ```{r}
 best_accuracy <-
-  rf_tune %>% 
+  rf_tune %>%
   select_best(metric = "accuracy")
 
-rf_final_mod <- rf_workflow %>% 
-  finalize_workflow(best_accuracy) %>% 
+rf_final_mod <- rf_workflow %>%
+  finalize_workflow(best_accuracy) %>%
   fit(data = traffic_training)
 
 best_accuracy2 <-
-  lasso_tune %>% 
+  lasso_tune %>%
   select_best(metric = "accuracy")
 
-lasso_final_mod <- lasso_wf %>% 
-  finalize_workflow(best_accuracy2) %>% 
+lasso_final_mod <- lasso_wf %>%
+  finalize_workflow(best_accuracy2) %>%
   fit(data = traffic_training)
 
 best_accuracy3 <-
-  tree_fit %>% 
+  tree_fit %>%
   select_best(metric = "accuracy")
 
-tree_final_mod <- tree_workflow %>% 
-  finalize_workflow(best_accuracy3) %>% 
+tree_final_mod <- tree_workflow %>%
+  finalize_workflow(best_accuracy3) %>%
   fit(data = traffic_training)
 ```
 
 ```{r}
-rf_explain <- 
+rf_explain <-
   explain_tidymodels(
     model = rf_final_mod,
     data = traffic_training %>% select(-Status),
-    y = traffic_training %>% 
-      mutate(status_num = as.integer(Status =="Severe")) %>% 
+    y = traffic_training %>%
+      mutate(status_num = as.integer(Status =="Severe")) %>%
       pull(status_num),
     label = "rf"
   )
 
-lasso_explain <- 
+lasso_explain <-
   explain_tidymodels(
     model = lasso_final_mod,
     data = traffic_training %>% select(-Status),
-    y = traffic_training %>% 
-      mutate(status_num = as.integer(Status =="Severe")) %>% 
+    y = traffic_training %>%
+      mutate(status_num = as.integer(Status =="Severe")) %>%
       pull(status_num),
     label = "lasso"
   )
 
-tree_explain <- 
+tree_explain <-
   explain_tidymodels(
     model = tree_final_mod,
     data = traffic_training %>% select(-Status),
-    y = traffic_training %>% 
-      mutate(status_num = as.integer(Status =="Severe")) %>% 
+    y = traffic_training %>%
+      mutate(status_num = as.integer(Status =="Severe")) %>%
       pull(status_num),
     label = "tree"
   )
@@ -552,39 +544,39 @@ tree_mod_perform <- model_performance(tree_explain)
 ```
 
 ```{r, echo = FALSE}
-# hist_plot_lasso <- 
+# hist_plot_lasso <-
 #   plot(lasso_mod_perform,
 #        geom = "histogram")
 # box_plot_lasso <-
 #   plot(lasso_mod_perform,
 #        geom = "boxplot")
-# 
+#
 # hist_plot_lasso + box_plot_lasso
 
 ```
 
 ```{r, echo = FALSE}
-# hist_plot_rf <- 
+# hist_plot_rf <-
 #   plot(rf_mod_perform,
 #        geom = "histogram")
 # box_plot_rf <-
 #   plot(rf_mod_perform,
 #        geom = "boxplot")
-# 
+#
 # hist_plot_rf + box_plot_rf
 
 ```
 
 
 ```{r, echo = FALSE}
-# hist_plot_tree <- 
+# hist_plot_tree <-
 #   plot(tree_mod_perform,
 #        geom = "histogram")
-# 
+#
 # box_plot_tree <-
 #   plot(tree_mod_perform,
 #        geom = "boxplot")
-# 
+#
 # hist_plot_tree + box_plot_tree
 ```
 
@@ -592,14 +584,14 @@ tree_mod_perform <- model_performance(tree_explain)
 plot(tree_mod_perform,lasso_mod_perform,rf_mod_perform,geom = "histogram")+
 plot(tree_mod_perform,lasso_mod_perform,rf_mod_perform,geom = "boxplot")
 ```
-As we can see from the histograms, the majority of the residual values are clustered in values close to 0. The model with the lowest average residual value is lasso, followed by the tree model and the forest model. While the lasso and the forest models are left skewed this is not the case for the classification tree. The residuals for the classification tree are more spread towards the positive and the negative values, showing that this model might be less precise than the other two. 
+As we can see from the histograms, the majority of the residual values are clustered in values close to 0. The model with the lowest average residual value is lasso, followed by the tree model and the forest model. While the lasso and the forest models are left skewed this is not the case for the classification tree. The residuals for the classification tree are more spread towards the positive and the negative values, showing that this model might be less precise than the other two.
 
-##Variable of importance 
+##Variable of importance
 
 ```{r}
-set.seed(494) 
+set.seed(494)
 
-lasso_var_imp <- 
+lasso_var_imp <-
   model_parts(
     lasso_explain
     )
@@ -609,8 +601,8 @@ plot(lasso_var_imp, show_boxplots = TRUE)
 ```
 
 ```{r}
-set.seed(494) 
-rf_var_imp <- 
+set.seed(494)
+rf_var_imp <-
   model_parts(
     rf_explain
     )
@@ -620,48 +612,48 @@ plot(rf_var_imp, show_boxplots = TRUE)
 
 
 ```{r}
-set.seed(494) 
-tree_var_imp <- 
+set.seed(494)
+tree_var_imp <-
   model_parts(
     tree_explain
     )
 
 plot(tree_var_imp, show_boxplots = TRUE)
 ```
-We can see that there are more variables with greater importance in the lasso and the forest models. This means that, the values that are at the top generate great increases in the performance of the model when permuted relative to the other variables. The length of the bars indicate how much the performance increases when that variable is permuted. Permuting is the process of exchanging the values of a variable between observations. We can see that the lasso and forest model's performance increase when start longitude is permuted. This is the case for city in the classification tree. 
+We can see that there are more variables with greater importance in the lasso and the forest models. This means that, the values that are at the top generate great increases in the performance of the model when permuted relative to the other variables. The length of the bars indicate how much the performance increases when that variable is permuted. Permuting is the process of exchanging the values of a variable between observations. We can see that the lasso and forest model's performance increase when start longitude is permuted. This is the case for city in the classification tree.
 
 ##Ceteris-Paribus Profile
 
-This profiles show how one variable affects the outcome holding all other variables fixed for one observation. 
+This profiles show how one variable affects the outcome holding all other variables fixed for one observation.
 
 ```{r}
 cp_profile <- function(explainer, obs, var){
   cpp<-predict_profile(explainer = explainer, new_observation = obs, variables = var)
   cpp %>%
-    filter(`_vname_` %in% c(var)) %>% 
+    filter(`_vname_` %in% c(var)) %>%
   ggplot(aes_string(x = var,
              y = "`_yhat_`")) +
-  geom_line() 
+  geom_line()
 }
-  
+ 
 obs37 <- traffic_training %>%
   slice(37)
 
 cp_profile(rf_explain, obs37, "Start_Lng")
 ```
 
-In this graph we can see how changes to the values of the starting longitude affect the probability that the accident is Severe, holding all the other variables constant. As we can see, the probability that an accident is severe changes drastically whit different start longitude values, reflecting the importance of the variable for the forest model. 
+In this graph we can see how changes to the values of the starting longitude affect the probability that the accident is Severe, holding all the other variables constant. As we can see, the probability that an accident is severe changes drastically whit different start longitude values, reflecting the importance of the variable for the forest model.
 
 ##Partial Dependence Plots
 
-Remember the CP profile used only one observation? A partial dependence plot is created by averaging the CP profiles for a sample of observations. The partial dependence profile is the blue line. We can see that overall, changes to the value of the longitude affect the probability that an accident is sever significantly. If we were to analyze the dependence plot for lasso the lines we would see inclined parallel lines given that lasso is additive. This is not very informative, that's why we decided to focus on the forest model. 
+Remember the CP profile used only one observation? A partial dependence plot is created by averaging the CP profiles for a sample of observations. The partial dependence profile is the blue line. We can see that overall, changes to the value of the longitude affect the probability that an accident is sever significantly. If we were to analyze the dependence plot for lasso the lines we would see inclined parallel lines given that lasso is additive. This is not very informative, that's why we decided to focus on the forest model.
 
 ```{r}
-set.seed(494) 
+set.seed(494)
 
 rf_pdp <- model_profile(explainer = rf_explain)
 
-plot(rf_pdp, 
+plot(rf_pdp,
      variables = "Start_Lng",
      geom = "profiles")
 ```
@@ -670,12 +662,12 @@ plot(rf_pdp,
 
 #Local Model Interpretation
 
-Local model interpretation helps us understand the impact of variables on individual observations. 
+Local model interpretation helps us understand the impact of variables on individual observations. We will focus on the random forest model given that it is the model with the higher accuracy. We would like to do the interpretation for the stacked model, but this isn't possible using DALEX and DALEXtra. Considering that out stacked model has few models stacked, we think that doing the analysis of the random forest model should give us a fair idea of what is the local importance of our variables.
 
 
 ##Shapley Additive Explanations (SHAP)
 
-For Break Down profiles, the contributions of variables would change with the order in which the variables are considered in the random forest model. Therefore we decided to use the SHAP. 
+For Break Down profiles, the contributions of variables would change with the order in which the variables are considered in the random forest model. Therefore we decided to use the SHAP.
 
 
 ```{r, cache = TRUE}
@@ -688,7 +680,7 @@ rf_shap <-predict_parts(explainer = rf_explain,
 plot(rf_shap)
 ```
 
-Each bar shows the average contribution of each variable's value to the predicted severity for this observed accident. We can see that a duration of 44.62 contributes almost an additional 0.15 to the predicted probability of a severe accident, on average. The boxplot shows the variation across permutations of the order of the variable. A large variation would mean that we should be less confident in its exact effect. For example we see that Nautical twilight has a large variation; therefore, we aren't confident about it's contribution to the prediction. 
+Each bar shows the average contribution of each variable's value to the predicted severity for this observed accident. We can see that a duration of 44.62 contributes almost an additional 0.15 to the predicted probability of a severe accident, on average. The boxplot shows the variation across permutations of the order of the variable. A large variation would mean that we should be less confident in its exact effect. For example we see that Nautical twilight has a large variation; therefore, we aren't confident about it's contribution to the prediction.
 
 
 ##Local Interpretable Model-agnostic Explanations (LIME)
@@ -702,30 +694,29 @@ predict_model.dalex_explainer <- DALEXtra::predict_model.dalex_explainer
 
 lime_rf <- predict_surrogate(explainer = rf_explain,
                              new_observation = obs37 %>%
-                               select(-Status), 
+                               select(-Status),
                              n_features = 5,
                              n_permutations = 1000,
                              type = "lime")
 
-lime_rf %>% 
-  select(model_r2, model_prediction, prediction) %>% 
+lime_rf %>%
+  select(model_r2, model_prediction, prediction) %>%
   distinct()
 
 plot(lime_rf) +
   labs(x = "Variable")
 ```
-The table shows the predicted value from the local model as 0.2624304. and the prediction from the original forest model of 6.17 This graph shows us the predicted value from the original random forest model as "Prediction". The *r^2* of the model is shown as the "Explanation fit" showing that the model explains 25% of the variance of our sample. The bars show that distance is the most important variable in the local model. 
+
+The table shows the predicted value from the local model as 0.2624304. and the prediction from the original forest model of 6.17 This graph shows us the predicted value from the original random forest model as "Prediction". The r-squared value of the model is shown as the "Explanation fit" showing that the model explains 25% of the variance of our sample. The bars show that distance is the most important variable in the local model.
+ 
+
+#Conclusion:
+
+We have explored how changes in the values of variables for an observation can affect the predicted outcome using two methods. Both methods show similar results; however, it's important to note that while the SHAP plot includes more variables, it is less reliable. We have seen also that starting longitude is the most important variable according to two of our models, and that changing its value for an observation holding the other variables constant changes the predicted value significantly. Even with slight differences all of the models showed similar results for the variables of interest, showing that the results are coherent and reasonable. We can conclude that overall, distance, starting longitude, duration and month are the most important variables for the prediction of the severity of an accident. This means that depending on the month, the weather or the amount of traffic could be associated with the severity of an accident. The length of the road extent affected by the accident also is a good predictor for severity. The time between the start of the accident and the end of the impact on traffic flow also are associated with the severity. Lastly, there is a strong association between starting longitude of the accident and the severity which could be driven by demographic or other non-controlled characteristics that differentiate western to eastern states.
 
 
-#Conclusion: 
+#Repercussions:
 
-We have explored how changes in the values of variables for an observation can affect the predicted outcome using two methods. Both methods show similar results; however, it's important to note that while the SHAP plot include more variables, it is less reliable. We have seen also that starting longitude is the most important variables according to two of our models, and that changing its value for an observation holding the other variables constant changes the predicted value significantly. Even with slight differences all of the models showed similar results for variables of interest, showing that the results are coherent and reasonable. We can conclude that overall, distance, starting longitude, duration and month are the most important variables for the prediction of the severity of an accident. 
-
-#Repercussions: 
-
-Our analysis only focused on environmental factors that are associated with the severity of an accident. There are multiple other factors that we didn't include like speed or whether the driver was intoxicated. Therefore, the model and the analysis is not complete and should not be regarded as such. On the other hand, this analysis didn't account for demographics; therefore, the differences in locations do not respond to anyone's ethnicity, education, sex or any other identity. This model is meant to further analyze what external factors contribute the most to the severity of an accident. 
-
-
-
+Our analysis only focused on environmental factors that are associated with the severity of an accident. There are multiple other factors that we didn't include like speed or whether the driver was intoxicated. Therefore, the model and the analysis is not complete and should not be regarded as such. On the other hand, this analysis didn't account for demographics; therefore, the differences in locations do not respond to anyone's ethnicity, education, sex or any other identity. This model is meant to further analyze what external factors contribute the most to the severity of an accident.
 
 
